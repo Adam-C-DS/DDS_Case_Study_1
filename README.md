@@ -3,8 +3,8 @@
 
 ###### Testing out my github syntax skills!
 
-To be added:
--Project Schedule
+To be added:\
+-Project Schedule\
 -Project Details
 -EDA's
 -Relevant Statistical Outputs
