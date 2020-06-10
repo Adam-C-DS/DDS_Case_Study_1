@@ -8,4 +8,4 @@ To be added:\
 -Project Details\
 -EDA's\
 -Relevant Statistical Outputs\
--Presentation Power Point\
+-Presentation Power Point
