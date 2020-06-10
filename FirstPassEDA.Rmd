@@ -64,42 +64,42 @@ gg_miss_var(BeerBrewery)
 ```{r}
 # Comments on 62 missing ABV Data -  most of this is likely recoverable - ## row | brewery | beer
 
-## 75 Brewery Vivant Fat Paczki
-## 76 Brewery Vivant Earth-Like-Planets
-## 186 Sun King Brewing Company 30 Min Coma
-## 193 Sun King Brewing Company Bourbon Barrel Cowbell
-## 227 Cedar Creek Brewery Special Release
-## 252 James Page Brewing Company Bastian
-## 440 Crazy Mountain Brewing Company Winter Wondergrass Festival Ale
-## 441 Crazy Mountain Brewing Company Boohai Red Ale
-## 508 Blue Owl Brewing Professor Black
-## 509 Blue Owl Brewing Little Boss
-## 510 Blue Owl Brewing Van Dayum!
-## 511 Blue Owl Brewing Spirit Animal
-## 568 Keweenaw Brewing Company U. P. Witbier
-## 569 Keweenaw Brewing Company November Gale Pale Ale
-## 570 Keweenaw Brewing Company Olde Ore Dock Scottish Ale
-## 571 Keweenaw Brewing Company Widow Maker Black Ale
-## 572 Keweenaw Brewing Company Lift Bridge Brown Ale
-## 573 Keweenaw Brewing Company Pick Axe Blonde Ale
-## 574 Keweenaw Brewing Company Red Jack Amber Ale
-## 629 West Sixth Brewing West Sixth IPA
-## 789 Weston Brewing Company Royal Lager
-## 791 Weston Brewing Company O'Malley's Stout
-## 793 Weston Brewing Company O'Malley's Cream Ale
-## 900 Fort Pitt Brewing Company Fort Pit Ale
-## 992 Oskar Blues Brewery The Crowler
-## 993 Oskar Blues Brewery Cand Aid
-## 994 Oskar Blues Brewery Icey P.A.
-## 996 Oskar Blues Brewery Birth IPA
-## 1158 Capital Brewery Supper Club Lager
-## 1298 Rochester Mills Brewing Company Cal and Co Black Cherry Porter
-## 1424 Ska Brewing Company Autumnal Mole' Stout
-## 1480 Thunderhead Brewing Company Cornstalker Dark Wheat
-## 1631 Iron Hill Brewery & Restaurant Appreciation Ale
-## 1887 Blue Blood Brewing Company Couble Play Pilsner
-## 1892 Blue Blood Brewing Company N Street Drive-In 50th Anniversary IPA
-## 1919 Revolution Brewing Rye Porter
+## 75 Brewery Vivant Fat Paczki - 7.5%
+## 76 Brewery Vivant Earth-Like-Planets 5.5%
+## 186 Sun King Brewing Company 30 Min Coma 4.5% abv - 65 IBU
+## 193 Sun King Brewing Company Bourbon Barrel Cowbell 6% abv - 23 IBU
+## 227 Cedar Creek Brewery Special Release commented above
+## 252 James Page Brewing Company Bastian 6.2% no IBU
+## 440 Crazy Mountain Brewing Company Winter Wondergrass Festival Ale 4.9% no IBU
+## 441 Crazy Mountain Brewing Company Boohai Red Ale 6%
+## 508 Blue Owl Brewing Professor Black 6.2%
+## 509 Blue Owl Brewing Little Boss 3.8%  - 7 IBU
+## 510 Blue Owl Brewing Van Dayum! 5.7%
+## 511 Blue Owl Brewing Spirit Animal 5.5%
+## 568 Keweenaw Brewing Company U. P. Witbier 5.5% No IBU
+## 569 Keweenaw Brewing Company November Gale Pale Ale 5% - 5 IBU
+## 570 Keweenaw Brewing Company Olde Ore Dock Scottish Ale 7%
+## 571 Keweenaw Brewing Company Widow Maker Black Ale 5.2%
+## 572 Keweenaw Brewing Company Lift Bridge Brown Ale 5%
+## 573 Keweenaw Brewing Company Pick Axe Blonde Ale 4.9%
+## 574 Keweenaw Brewing Company Red Jack Amber Ale 5.1%
+## 629 West Sixth Brewing West Sixth IPA 7%
+## 789 Weston Brewing Company Royal Lager Couldnt Find
+## 791 Weston Brewing Company O'Malley's Stout 5.5%
+## 793 Weston Brewing Company O'Malley's Cream Ale 0% ?
+## 900 Fort Pitt Brewing Company Fort Pit Ale Couldnt find - not in production any longer
+## 992 Oskar Blues Brewery The Crowler - not ana ctual beer
+## 993 Oskar Blues Brewery Cand Aid - not an actual beer
+## 994 Oskar Blues Brewery Icey P.A. 7% 
+## 996 Oskar Blues Brewery Birth IPA couldnt find
+## 1158 Capital Brewery Supper Club Lager 5.2% 
+## 1298 Rochester Mills Brewing Company Cal and Co Black Cherry Porter 7%
+## 1424 Ska Brewing Company Autumnal Mole' Stout 5.8%
+## 1480 Thunderhead Brewing Company Cornstalker Dark Wheat 5.2% 
+## 1631 Iron Hill Brewery & Restaurant Appreciation Ale 9.4%
+## 1887 Blue Blood Brewing Company Double Play Pilsner 5.2%
+## 1892 Blue Blood Brewing Company N Street Drive-In 50th Anniversary IPA 8.6%
+## 1919 Revolution Brewing Rye Porter 
 ## 1924 Revolution Brewing Miner's Gold
 ## 1951 Santa Fe Brewing Company Sante fe Oktoberfest
 ## 2096 MillKing It Productions AXL Pale Ale
