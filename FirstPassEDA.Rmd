@@ -1,0 +1,34 @@
+---
+title: "First Pass DDS 1"
+author: "Adam Canton"
+date: "6/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(matrixStats)
+library(GGally)
+library(caret)
+library(corrplot)
+library(cowplot)
+library(ggExtra)
+library(ggthemes)
+library(maps)
+library(naniar)
+library(olsrr)
+library(stringr)
+```
+
+
+```{r}
+# pulling datasets
+Beers <- read.csv(file = "F:/R For Real/DDS Project 1/DDS-Project-1/Beers.csv")
+Breweries <- read.csv(file = "F:/R For Real/DDS Project 1/DDS-Project-1/Breweries.csv")
+```
+
