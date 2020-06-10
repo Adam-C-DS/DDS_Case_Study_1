@@ -6,11 +6,7 @@ Testing out my github skills!
 To be added:
 
 Project Schedule
-
 Project Details
-
 EDA's
-
 Relevant Statistical Outputs
-
 Presentation Power Point
