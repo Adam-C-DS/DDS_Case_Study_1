@@ -25,10 +25,132 @@ library(olsrr)
 library(stringr)
 ```
 
-
 ```{r}
 # pulling datasets
 Beers <- read.csv(file = "F:/R For Real/DDS Project 1/DDS-Project-1/Beers.csv")
 Breweries <- read.csv(file = "F:/R For Real/DDS Project 1/DDS-Project-1/Breweries.csv")
+
+# Merge Beer and Brewery
+BeerBrewery = merge(Beers, Breweries, by.x = "Brewery_id", by.y = "Brew_ID")
+
+# Change some column names for tidyness
+names(BeerBrewery)[2] <- "Beer"
+names(BeerBrewery)[8] <- "Brewery"
 ```
+
+```{r}
+head(BeerBrewery, 6)
+tail(BeerBrewery, 6)
+```
+
+```{r}
+gg_miss_var(BeerBrewery)
+```
+```{r}
+# Comments on missing Style Data:
+
+## n(227) Cedar Creek Brewery Special Release - actually refers to 2 different beers Smoked Cherry Quad and Excelsior (Imperial Milk Stout) - https://www.cedarcreekbrewery.com/special-release-beers maybe average them out? ABV - 9.2 v 9.8,  IBU - 33 v 47, Average 9.5 and 40 
+
+## n(455) Freetail Brewing Oktoberfiesta - Style is Marzen/Oktoberfest - https://www.freetailbrewing.com/our-brews/
+
+## n(946) Four Peaks Kilt Lifter Scottish Ale -  Style is Amber Ale - https://www.beeradvocate.com/beer/profile/2171/6218/
+
+## n(992) Oskar Blues The Crowler - Doesnt even seem like it is a beer type, just a resealable can. Consider getting rid of it
+
+## n(993) Oskar Blues Can'D AID Foundation is in fact water... just canned like beer for hurricane recovery
+
+```
+
+```{r}
+# Comments on 62 missing ABV Data -  most of this is likely recoverable - ## row | brewery | beer
+
+## 75 Brewery Vivant Fat Paczki
+## 76 Brewery Vivant Earth-Like-Planets
+## 186 Sun King Brewing Company 30 Min Coma
+## 193 Sun King Brewing Company Bourbon Barrel Cowbell
+## 227 Cedar Creek Brewery Special Release
+## 252 James Page Brewing Company Bastian
+## 440 Crazy Mountain Brewing Company Winter Wondergrass Festival Ale
+## 441 Crazy Mountain Brewing Company Boohai Red Ale
+## 508 Blue Owl Brewing Professor Black
+## 509 Blue Owl Brewing Little Boss
+## 510 Blue Owl Brewing Van Dayum!
+## 511 Blue Owl Brewing Spirit Animal
+## 568 Keweenaw Brewing Company U. P. Witbier
+## 569 Keweenaw Brewing Company November Gale Pale Ale
+## 570 Keweenaw Brewing Company Olde Ore Dock Scottish Ale
+## 571 Keweenaw Brewing Company Widow Maker Black Ale
+## 572 Keweenaw Brewing Company Lift Bridge Brown Ale
+## 573 Keweenaw Brewing Company Pick Axe Blonde Ale
+## 574 Keweenaw Brewing Company Red Jack Amber Ale
+## 629 West Sixth Brewing West Sixth IPA
+## 789 Weston Brewing Company Royal Lager
+## 791 Weston Brewing Company O'Malley's Stout
+## 793 Weston Brewing Company O'Malley's Cream Ale
+## 900 Fort Pitt Brewing Company Fort Pit Ale
+## 992 Oskar Blues Brewery The Crowler
+## 993 Oskar Blues Brewery Cand Aid
+## 994 Oskar Blues Brewery Icey P.A.
+## 996 Oskar Blues Brewery Birth IPA
+## 1158 Capital Brewery Supper Club Lager
+## 1298 Rochester Mills Brewing Company Cal and Co Black Cherry Porter
+## 1424 Ska Brewing Company Autumnal Mole' Stout
+## 1480 Thunderhead Brewing Company Cornstalker Dark Wheat
+## 1631 Iron Hill Brewery & Restaurant Appreciation Ale
+## 1887 Blue Blood Brewing Company Couble Play Pilsner
+## 1892 Blue Blood Brewing Company N Street Drive-In 50th Anniversary IPA
+## 1919 Revolution Brewing Rye Porter
+## 1924 Revolution Brewing Miner's Gold
+## 1951 Santa Fe Brewing Company Sante fe Oktoberfest
+## 2096 MillKing It Productions AXL Pale Ale
+## 2177 Brindle Dog Brewing Company Tampa Pale Ale
+## 2178 Brindle Dog Brewing Company Orange Grove Wheat Ale
+## 2184 Pete's Brewing Company Pete's Wicked Pale Ale (1997)
+## 2227 The Manhattan Brewing Company Manhattan Gold Lager (1990)
+## 2234 Dock Street Brewery Dock Street Amber Beer (1992)
+## 2242 Devil's Canyon Brewery Kaleidoscope Collaboration (2012)
+## 2259 Cans Bar and Canteen THP White (2006)
+## 2260 Cans Bar and Canteen THP Amber (2006)
+## 2261 Cans Bar and Canteen THP Light (2006)
+## 2262 Cans Bar and Canteen THP Dark (2006)
+## 2296 Spilker Ales Hopluia (2004)
+## 2345 Buckbean Brewing Company Roler Bock
+## 2351 Dolores River Brewery Dolores River Hefeweizen
+## 2352 Dolores River Brewery Dolores River ESB
+## 2353 Dolores River Brewery Snaggletooth Double Pale Ale
+## 2354 Dolores River Brewery Dolores River Pale Ale
+## 2355 Dolores River Brewery Dolores River Dry Stout
+## 2356 Dolores River Brewery Dolores River Mild
+## 2357 Flat Rock Brewing Company Inclined Plane Ale
+## 2365 Harvest Moon Brewing Company Great Falls Select Pale Ale
+## 2370 Grand Canyon Brewing Company Black Iron India Pale Ale
+## 2394 Prescott Brewing Company Ponderosa IPA
+## 2395 Prescott Brewing Company Liquid Amber Ale
+
+```
+
+```{r}
+# There are over 1,000 missing IBU observations - not sure how to deal with this many missing values. Likely going to have to automate something - Surely there is a beer api?
+```
+
+
+```{r}
+# Show number of breweries by state - needs some color
+Breweries %>% group_by(State) %>% count_() %>% ggplot(aes(x = reorder(State, -n), y = n )) +
+  geom_col() + theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +
+  xlab("State") + ylab('Number of Breweries') + ggtitle("Number of Breweries by State") + geom_text(aes(label = n), vjust = -0.5, size = 3)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
