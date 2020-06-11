@@ -148,12 +148,9 @@ mapBreweries$State = sub(" ", "", mapBreweries$State)
 
 map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
 
-plot_usmap(data = map2, values = "n", color = "red") + 
+plot_usmap(data = map2, values = "n", color = "red", labels = TRUE, label_color = "white") + 
   scale_fill_continuous(name = "Brewery count", label = scales::comma) + 
-  theme(legend.position = "right")
-
-plot_usmap(data = map2, values = "n", color = "red", labels = TRUE) + 
-  scale_fill_continuous(name = "Brewery count", label = scales::comma) + 
+  labs(title = "USA MAP", subtitle="Brewery counts by State") +
   theme(legend.position = "right")
 
 
