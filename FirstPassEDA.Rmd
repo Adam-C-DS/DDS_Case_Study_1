@@ -144,13 +144,17 @@ Breweries %>% group_by(State) %>% count_() %>% ggplot(aes(x = reorder(State, -n)
 
 mapBreweries = Breweries %>% group_by(State) %>% count_()
 mapBreweries$State = as.character(mapBreweries$State)
+mapBreweries$State = sub(" ", "", mapBreweries$State)
 
+map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
 
-plot_usmap(data = mapBreweries$State, values = "n", color = "red") + 
-  scale_fill_continuous(name = "Population (2015)", label = scales::comma) + 
+plot_usmap(data = map2, values = "n", color = "red") + 
+  scale_fill_continuous(name = "Brewery count", label = scales::comma) + 
   theme(legend.position = "right")
 
-
+plot_usmap(data = map2, values = "n", color = "red", labels = TRUE) + 
+  scale_fill_continuous(name = "Brewery count", label = scales::comma) + 
+  theme(legend.position = "right")
 
 
 
