@@ -1,6 +1,6 @@
 ---
 title: "First Pass DDS 1"
-author: "Adam Canton"
+author: "Adam Canton & Carl Keusseyan"
 date: "6/10/2020"
 output: html_document
 ---
@@ -23,12 +23,13 @@ library(maps)
 library(naniar)
 library(olsrr)
 library(stringr)
+library(usmap)
 ```
 
 ```{r}
 # pulling datasets
-Beers <- read.csv(file = "F:/R For Real/DDS Project 1/DDS-Project-1/Beers.csv")
-Breweries <- read.csv(file = "F:/R For Real/DDS Project 1/DDS-Project-1/Breweries.csv")
+Beers <- read.csv(file.choose(),header = TRUE) 
+Breweries <- read.csv(file.choose(),header = TRUE) 
 
 # Merge Beer and Brewery
 BeerBrewery = merge(Beers, Breweries, by.x = "Brewery_id", by.y = "Brew_ID")
@@ -51,9 +52,9 @@ gg_miss_var(BeerBrewery)
 
 ## n(227) Cedar Creek Brewery Special Release - actually refers to 2 different beers Smoked Cherry Quad and Excelsior (Imperial Milk Stout) - https://www.cedarcreekbrewery.com/special-release-beers maybe average them out? ABV - 9.2 v 9.8,  IBU - 33 v 47, Average 9.5 and 40 
 
-## n(455) Freetail Brewing Oktoberfiesta - Style is Marzen/Oktoberfest - https://www.freetailbrewing.com/our-brews/
+## GOOD n(455) Freetail Brewing Oktoberfiesta - Style is Marzen/Oktoberfest - https://www.freetailbrewing.com/our-brews/
 
-## n(946) Four Peaks Kilt Lifter Scottish Ale -  Style is Amber Ale - https://www.beeradvocate.com/beer/profile/2171/6218/
+## GOOD n(946) Four Peaks Kilt Lifter Scottish Ale -  Style is Amber Ale - https://www.beeradvocate.com/beer/profile/2171/6218/
 
 ## n(992) Oskar Blues The Crowler - Doesnt even seem like it is a beer type, just a resealable can. Consider getting rid of it
 
@@ -139,6 +140,26 @@ gg_miss_var(BeerBrewery)
 Breweries %>% group_by(State) %>% count_() %>% ggplot(aes(x = reorder(State, -n), y = n )) +
   geom_col() + theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +
   xlab("State") + ylab('Number of Breweries') + ggtitle("Number of Breweries by State") + geom_text(aes(label = n), vjust = -0.5, size = 3)
+
+
+mapBreweries = Breweries %>% group_by(State) %>% count_()
+mapBreweries$State = as.character(mapBreweries$State)
+mapBreweries$State = sub(" ", "", mapBreweries$State)
+
+map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
+
+plot_usmap(data = map2, values = "n", color = "red", labels = TRUE, label_color = "white") + 
+  scale_fill_continuous(name = "Brewery count", label = scales::comma) + 
+  labs(title = "USA MAP", subtitle="Brewery counts by State") +
+  theme(legend.position = "right")
+
+
+
+
+
+
+
+
 ```
 
 
