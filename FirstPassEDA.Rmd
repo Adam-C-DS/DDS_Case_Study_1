@@ -142,6 +142,9 @@ Breweries %>% group_by(State) %>% count_() %>% ggplot(aes(x = reorder(State, -n)
 ```
 
 
+```{r}
+Breweries %>% group_by(State) %>% count_()
+```
 
 
 
