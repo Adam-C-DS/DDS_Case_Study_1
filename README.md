@@ -9,3 +9,12 @@ To be added:\
 -EDA's\
 -Relevant Statistical Outputs\
 -Presentation Power Point
+
+# NA Ideas
+* Randomly generate data though rnorm based on company or style
+* impute the average of the specific type of beer
+  ** This may cause issues for some of the analysis
+
+# Where are the NA's for IBU?
+* Need to gather beer by style to compare.
+* Likely easiest to impute through style
