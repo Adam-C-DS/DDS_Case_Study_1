@@ -1,6 +1,6 @@
 ---
 title: "First Pass DDS 1"
-author: "Adam Canton & Carl Keusseyan"
+author: "Adam Canton"
 date: "6/10/2020"
 output: html_document
 ---
@@ -23,13 +23,12 @@ library(maps)
 library(naniar)
 library(olsrr)
 library(stringr)
-library(usmap)
 ```
 
 ```{r}
 # pulling datasets
-Beers <- read.csv(file.choose(),header = TRUE) 
-Breweries <- read.csv(file.choose(),header = TRUE) 
+Beers <- read.csv(file = "F:/R For Real/DDS Project 1/DDS-Project-1/Beers.csv")
+Breweries <- read.csv(file = "F:/R For Real/DDS Project 1/DDS-Project-1/Breweries.csv")
 
 # Merge Beer and Brewery
 BeerBrewery = merge(Beers, Breweries, by.x = "Brewery_id", by.y = "Brew_ID")
@@ -52,9 +51,9 @@ gg_miss_var(BeerBrewery)
 
 ## n(227) Cedar Creek Brewery Special Release - actually refers to 2 different beers Smoked Cherry Quad and Excelsior (Imperial Milk Stout) - https://www.cedarcreekbrewery.com/special-release-beers maybe average them out? ABV - 9.2 v 9.8,  IBU - 33 v 47, Average 9.5 and 40 
 
-## GOOD n(455) Freetail Brewing Oktoberfiesta - Style is Marzen/Oktoberfest - https://www.freetailbrewing.com/our-brews/
+## n(455) Freetail Brewing Oktoberfiesta - Style is Marzen/Oktoberfest - https://www.freetailbrewing.com/our-brews/
 
-## GOOD n(946) Four Peaks Kilt Lifter Scottish Ale -  Style is Amber Ale - https://www.beeradvocate.com/beer/profile/2171/6218/
+## n(946) Four Peaks Kilt Lifter Scottish Ale -  Style is Amber Ale - https://www.beeradvocate.com/beer/profile/2171/6218/
 
 ## n(992) Oskar Blues The Crowler - Doesnt even seem like it is a beer type, just a resealable can. Consider getting rid of it
 
@@ -100,33 +99,33 @@ gg_miss_var(BeerBrewery)
 ## 1631 Iron Hill Brewery & Restaurant Appreciation Ale 9.4%
 ## 1887 Blue Blood Brewing Company Double Play Pilsner 5.2%
 ## 1892 Blue Blood Brewing Company N Street Drive-In 50th Anniversary IPA 8.6%
-## 1919 Revolution Brewing Rye Porter 
-## 1924 Revolution Brewing Miner's Gold
-## 1951 Santa Fe Brewing Company Sante fe Oktoberfest
-## 2096 MillKing It Productions AXL Pale Ale
-## 2177 Brindle Dog Brewing Company Tampa Pale Ale
-## 2178 Brindle Dog Brewing Company Orange Grove Wheat Ale
-## 2184 Pete's Brewing Company Pete's Wicked Pale Ale (1997)
-## 2227 The Manhattan Brewing Company Manhattan Gold Lager (1990)
-## 2234 Dock Street Brewery Dock Street Amber Beer (1992)
-## 2242 Devil's Canyon Brewery Kaleidoscope Collaboration (2012)
-## 2259 Cans Bar and Canteen THP White (2006)
-## 2260 Cans Bar and Canteen THP Amber (2006)
-## 2261 Cans Bar and Canteen THP Light (2006)
-## 2262 Cans Bar and Canteen THP Dark (2006)
-## 2296 Spilker Ales Hopluia (2004)
-## 2345 Buckbean Brewing Company Roler Bock
-## 2351 Dolores River Brewery Dolores River Hefeweizen
-## 2352 Dolores River Brewery Dolores River ESB
-## 2353 Dolores River Brewery Snaggletooth Double Pale Ale
-## 2354 Dolores River Brewery Dolores River Pale Ale
-## 2355 Dolores River Brewery Dolores River Dry Stout
-## 2356 Dolores River Brewery Dolores River Mild
-## 2357 Flat Rock Brewing Company Inclined Plane Ale
-## 2365 Harvest Moon Brewing Company Great Falls Select Pale Ale
-## 2370 Grand Canyon Brewing Company Black Iron India Pale Ale
-## 2394 Prescott Brewing Company Ponderosa IPA
-## 2395 Prescott Brewing Company Liquid Amber Ale
+## 1919 Revolution Brewing Rye Porter No longer in production
+## 1924 Revolution Brewing Miner's Gold 5.1%
+## 1951 Santa Fe Brewing Company Sante fe Oktoberfest 6%
+## 2096 MillKing It Productions AXL Pale Ale 5.2
+## 2177 Brindle Dog Brewing Company Tampa Pale Ale 6.2
+## 2178 Brindle Dog Brewing Company Orange Grove Wheat Ale - couldnt find
+## 2184 Pete's Brewing Company Pete's Wicked Pale Ale (1997) 5.3
+## 2227 The Manhattan Brewing Company Manhattan Gold Lager (1990) 5.2 (Beer Authority NYC)
+## 2234 Dock Street Brewery Dock Street Amber Beer (1992) 5%
+## 2242 Devil's Canyon Brewery Kaleidoscope Collaboration (2012) 5.5
+## 2259 Cans Bar and Canteen THP White (2006) Closed
+## 2260 Cans Bar and Canteen THP Amber (2006) Closed
+## 2261 Cans Bar and Canteen THP Light (2006) Closed
+## 2262 Cans Bar and Canteen THP Dark (2006) Closed
+## 2296 Spilker Ales Hopluia (2004) 5.2
+## 2345 Buckbean Brewing Company Roler Bock 7.2
+## 2351 Dolores River Brewery Dolores River Hefeweizen No Info
+## 2352 Dolores River Brewery Dolores River ESB 6.1
+## 2353 Dolores River Brewery Snaggletooth Double Pale Ale No Info 
+## 2354 Dolores River Brewery Dolores River Pale Ale 5.8
+## 2355 Dolores River Brewery Dolores River Dry Stout No info
+## 2356 Dolores River Brewery Dolores River Mild No info
+## 2357 Flat Rock Brewing Company Inclined Plane Ale 4.2
+## 2365 Harvest Moon Brewing Company Great Falls Select Pale Ale 5
+## 2370 Grand Canyon Brewing Company Black Iron India Pale Ale 7.2
+## 2394 Prescott Brewing Company Ponderosa IPA 6.5 70
+## 2395 Prescott Brewing Company Liquid Amber Ale 5 17
 
 ```
 
@@ -140,26 +139,6 @@ gg_miss_var(BeerBrewery)
 Breweries %>% group_by(State) %>% count_() %>% ggplot(aes(x = reorder(State, -n), y = n )) +
   geom_col() + theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +
   xlab("State") + ylab('Number of Breweries') + ggtitle("Number of Breweries by State") + geom_text(aes(label = n), vjust = -0.5, size = 3)
-
-
-mapBreweries = Breweries %>% group_by(State) %>% count_()
-mapBreweries$State = as.character(mapBreweries$State)
-mapBreweries$State = sub(" ", "", mapBreweries$State)
-
-map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
-
-plot_usmap(data = map2, values = "n", color = "red", labels = TRUE, label_color = "white") + 
-  scale_fill_continuous(name = "Brewery count", label = scales::comma) + 
-  labs(title = "USA MAP", subtitle="Brewery counts by State") +
-  theme(legend.position = "right")
-
-
-
-
-
-
-
-
 ```
 
 
@@ -167,8 +146,18 @@ plot_usmap(data = map2, values = "n", color = "red", labels = TRUE, label_color 
 Breweries %>% group_by(State) %>% count_()
 ```
 
-
-
+```{r}
+mapBreweries = Breweries %>% group_by(State) %>% count_()
+```
+```{r}
+mapBreweries$State = as.character(mapBreweries$State)
+mapBreweries$State = sub(" ", "", mapBreweries$State)
+map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
+plot_usmap(data = map2, values = "n", color = "red", labels = TRUE, label_color = "white") + 
+  scale_fill_continuous(name = "Brewery count", label = scales::comma) + 
+  labs(title = "USA MAP", subtitle="Brewery counts by State") +
+  theme(legend.position = "right")
+```
 
 
 
