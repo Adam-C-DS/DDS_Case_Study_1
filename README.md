@@ -13,8 +13,11 @@ To be added:\
 # NA Ideas
 * Randomly generate data though rnorm based on company or style
 * impute the average of the specific type of beer
-  ** This may cause issues for some of the analysis
+  * This may cause issues for some of the analysis
+* Change to a categorical variable based on scale: https://www.drtanknstein.com/2018/12/10/ibu-is-back/
+* We can categorize on IBU and make the NA's a level and we can compare them separate if need be
 
 # Where are the NA's for IBU?
 * Need to gather beer by style to compare.
 * Likely easiest to impute through style
+
