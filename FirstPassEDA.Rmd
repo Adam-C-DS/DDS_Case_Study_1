@@ -234,6 +234,9 @@ BeerBrewery$IBUFac = as.factor(BeerBrewery$IBU)
 BeerBrewery$IBUFac = addNA(BeerBrewery$IBUFac)
 levels(BeerBrewery$IBUFac)
 ```
+```{r}
+BeerBreweryNA.delete = BeerBrewery %>% filter(IBU != "NA")
+```
 
 ```{r}
 # Shows IBU with and Without the NA
@@ -256,6 +259,39 @@ Styles %>% arrange(-CountStyle) %>% slice(1:15) %>% ggplot(aes(x = reorder(Style
   ggtitle("15 Most Popular Beer Styles by Style Frequency")
 ```
 
+```{r}
+linearmodel1 <- lm(IBU ~ ABV, data = BeerBreweryNA.delete)
+summary(linearmodel1)
+ols_plot_resid_fit(linearmodel1)
+ols_plot_resid_lev(linearmodel1)
+ols_plot_resid_qq(linearmodel1)
+ols_plot_resid_hist(linearmodel1)
+ols_plot_cooksd_bar(linearmodel1)
+```
 
+```{r}
+linearmodel2 <- lm(log(IBU) ~ poly(log(ABV),3), data = BeerBreweryNA.delete)
+summary(linearmodel2)
+ols_plot_resid_fit(linearmodel2)
+ols_plot_resid_lev(linearmodel2)
+ols_plot_resid_qq(linearmodel2)
+ols_plot_resid_hist(linearmodel2)
+ols_plot_cooksd_bar(linearmodel2)
+```
+
+```{r}
+linearmodel3 <- lm(scale(IBU) ~ scale(ABV), data = BeerBreweryNA.delete)
+summary(linearmodel3)
+ols_plot_resid_fit(linearmodel3)
+ols_plot_resid_lev(linearmodel3)
+ols_plot_resid_qq(linearmodel3)
+ols_plot_resid_hist(linearmodel3)
+ols_plot_cooksd_bar(linearmodel3)
+```
+
+```{r}
+BeerBreweryNA.delete %>% ggplot(aes(x = ABV, y = IBU)) + geom_point() + geom_smooth(formula = y~x) + xlim(0,0.15) + geom_jitter() + 
+  ggtitle("Scatterplot of IBU v ABV")
+```
 
 
