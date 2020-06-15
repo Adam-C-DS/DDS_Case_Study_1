@@ -23,6 +23,10 @@ library(maps)
 library(naniar)
 library(olsrr)
 library(stringr)
+library(e1071)
+library(FNN)
+library(MASS)
+library(ggthemes)
 ```
 
 ```{r}
@@ -46,6 +50,14 @@ tail(BeerBrewery, 6)
 ```{r}
 gg_miss_var(BeerBrewery)
 ```
+
+```{r}
+na_count <- sapply(BeerBrewery, function(y) sum(length(which(is.na(y)))))
+na_count <- data.frame(na_count)
+na_count
+```
+
+
 ```{r}
 # Comments on missing Style Data:
 
@@ -62,83 +74,138 @@ gg_miss_var(BeerBrewery)
 ```
 
 ```{r}
-# Comments on 62 missing ABV Data -  most of this is likely recoverable - ## row | brewery | beer
+# Comments on 62 missing ABV Data -  most of this is likely recoverable - ## row | brewery | beer | ABV | IBU if avail
 
 ## 75 Brewery Vivant Fat Paczki - 7.5%
+BeerBrewery$ABV[75] = 0.075
 ## 76 Brewery Vivant Earth-Like-Planets 5.5%
+BeerBrewery$ABV[76] = 0.055
 ## 186 Sun King Brewing Company 30 Min Coma 4.5% abv - 65 IBU
+BeerBrewery$ABV[186] = 0.045
+BeerBrewery$IBU[186] = 65
 ## 193 Sun King Brewing Company Bourbon Barrel Cowbell 6% abv - 23 IBU
+BeerBrewery$ABV[193] = 0.060
+BeerBrewery$IBU[193] = 23
 ## 227 Cedar Creek Brewery Special Release commented above
+
 ## 252 James Page Brewing Company Bastian 6.2% no IBU
+BeerBrewery$ABV[252] = 0.062
 ## 440 Crazy Mountain Brewing Company Winter Wondergrass Festival Ale 4.9% no IBU
+BeerBrewery$ABV[440] = 0.049
 ## 441 Crazy Mountain Brewing Company Boohai Red Ale 6%
+BeerBrewery$ABV[441] = 0.060
 ## 508 Blue Owl Brewing Professor Black 6.2%
+BeerBrewery$ABV[508] = 0.062
 ## 509 Blue Owl Brewing Little Boss 3.8%  - 7 IBU
+BeerBrewery$ABV[509] = 0.038
+BeerBrewery$IBU[509] = 7
 ## 510 Blue Owl Brewing Van Dayum! 5.7%
+BeerBrewery$ABV[510] = 0.057
 ## 511 Blue Owl Brewing Spirit Animal 5.5%
+BeerBrewery$ABV[511] = 0.055
 ## 568 Keweenaw Brewing Company U. P. Witbier 5.5% No IBU
+BeerBrewery$ABV[568] = 0.055
 ## 569 Keweenaw Brewing Company November Gale Pale Ale 5% - 5 IBU
+BeerBrewery$ABV[569] = 0.050
+BeerBrewery$ABV[569] = 5
 ## 570 Keweenaw Brewing Company Olde Ore Dock Scottish Ale 7%
+BeerBrewery$ABV[570] = 0.070
 ## 571 Keweenaw Brewing Company Widow Maker Black Ale 5.2%
+BeerBrewery$ABV[571] = 0.052
 ## 572 Keweenaw Brewing Company Lift Bridge Brown Ale 5%
+BeerBrewery$ABV[572] = 0.050
 ## 573 Keweenaw Brewing Company Pick Axe Blonde Ale 4.9%
+BeerBrewery$ABV[573] = 0.049
 ## 574 Keweenaw Brewing Company Red Jack Amber Ale 5.1%
+BeerBrewery$ABV[574] = 0.051
 ## 629 West Sixth Brewing West Sixth IPA 7%
+BeerBrewery$ABV[629] = 0.07
 ## 789 Weston Brewing Company Royal Lager Couldnt Find
 ## 791 Weston Brewing Company O'Malley's Stout 5.5%
+BeerBrewery$ABV[791] = 0.055
 ## 793 Weston Brewing Company O'Malley's Cream Ale 0% ?
 ## 900 Fort Pitt Brewing Company Fort Pit Ale Couldnt find - not in production any longer
-## 992 Oskar Blues Brewery The Crowler - not ana ctual beer
+## 992 Oskar Blues Brewery The Crowler - not an actual beer
 ## 993 Oskar Blues Brewery Cand Aid - not an actual beer
 ## 994 Oskar Blues Brewery Icey P.A. 7% 
+BeerBrewery$ABV[994] = 0.07
 ## 996 Oskar Blues Brewery Birth IPA couldnt find
 ## 1158 Capital Brewery Supper Club Lager 5.2% 
+BeerBrewery$ABV[1158] = 0.075
 ## 1298 Rochester Mills Brewing Company Cal and Co Black Cherry Porter 7%
+BeerBrewery$ABV[1298] = 0.07
 ## 1424 Ska Brewing Company Autumnal Mole' Stout 5.8%
+BeerBrewery$ABV[1424] = 0.058
 ## 1480 Thunderhead Brewing Company Cornstalker Dark Wheat 5.2% 
+BeerBrewery$ABV[1480] = 0.052
 ## 1631 Iron Hill Brewery & Restaurant Appreciation Ale 9.4%
+BeerBrewery$ABV[1631] = 0.094
 ## 1887 Blue Blood Brewing Company Double Play Pilsner 5.2%
+BeerBrewery$ABV[1887] = 0.052
 ## 1892 Blue Blood Brewing Company N Street Drive-In 50th Anniversary IPA 8.6%
+BeerBrewery$ABV[1892] = 0.086
 ## 1919 Revolution Brewing Rye Porter No longer in production
 ## 1924 Revolution Brewing Miner's Gold 5.1%
+BeerBrewery$ABV[1924] = 0.051
 ## 1951 Santa Fe Brewing Company Sante fe Oktoberfest 6%
+BeerBrewery$ABV[1951] = 0.06
 ## 2096 MillKing It Productions AXL Pale Ale 5.2
+BeerBrewery$ABV[2096] = 0.062
 ## 2177 Brindle Dog Brewing Company Tampa Pale Ale 6.2
+BeerBrewery$ABV[2177] = 0.062
 ## 2178 Brindle Dog Brewing Company Orange Grove Wheat Ale - couldnt find
 ## 2184 Pete's Brewing Company Pete's Wicked Pale Ale (1997) 5.3
+BeerBrewery$ABV[2184] = 0.053
 ## 2227 The Manhattan Brewing Company Manhattan Gold Lager (1990) 5.2 (Beer Authority NYC)
+BeerBrewery$ABV[2227] = 0.052
 ## 2234 Dock Street Brewery Dock Street Amber Beer (1992) 5%
+BeerBrewery$ABV[2234] = 0.05
 ## 2242 Devil's Canyon Brewery Kaleidoscope Collaboration (2012) 5.5
+BeerBrewery$ABV[2242] = 0.055
 ## 2259 Cans Bar and Canteen THP White (2006) Closed
 ## 2260 Cans Bar and Canteen THP Amber (2006) Closed
 ## 2261 Cans Bar and Canteen THP Light (2006) Closed
 ## 2262 Cans Bar and Canteen THP Dark (2006) Closed
 ## 2296 Spilker Ales Hopluia (2004) 5.2
+BeerBrewery$ABV[2296] = 0.052
 ## 2345 Buckbean Brewing Company Roler Bock 7.2
+BeerBrewery$ABV[2345] = 0.072
 ## 2351 Dolores River Brewery Dolores River Hefeweizen No Info
 ## 2352 Dolores River Brewery Dolores River ESB 6.1
+BeerBrewery$ABV[2352] = 0.061
 ## 2353 Dolores River Brewery Snaggletooth Double Pale Ale No Info 
 ## 2354 Dolores River Brewery Dolores River Pale Ale 5.8
+BeerBrewery$ABV[2354] = 0.058
 ## 2355 Dolores River Brewery Dolores River Dry Stout No info
 ## 2356 Dolores River Brewery Dolores River Mild No info
 ## 2357 Flat Rock Brewing Company Inclined Plane Ale 4.2
+BeerBrewery$ABV[2357] = 0.042
 ## 2365 Harvest Moon Brewing Company Great Falls Select Pale Ale 5
+BeerBrewery$ABV[2365] = 0.05
 ## 2370 Grand Canyon Brewing Company Black Iron India Pale Ale 7.2
+BeerBrewery$ABV[2370] = 0.072
 ## 2394 Prescott Brewing Company Ponderosa IPA 6.5 70
+BeerBrewery$ABV[2394] = 0.065
+BeerBrewery$ABV[2394] = 70
 ## 2395 Prescott Brewing Company Liquid Amber Ale 5 17
+BeerBrewery$ABV[2395] = 0.050
+BeerBrewery$IBU[2395] = 17
 
 ```
 
 ```{r}
 # There are over 1,000 missing IBU observations - not sure how to deal with this many missing values. Likely going to have to automate something - Surely there is a beer api?
+# Apparently lots of methods
+## Have NA be a level
+## use KNN or NB to impute from predicted values
 ```
 
 
 ```{r}
 # Show number of breweries by state - needs some color
 Breweries %>% group_by(State) %>% count_() %>% ggplot(aes(x = reorder(State, -n), y = n )) +
-  geom_col() + theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +
-  xlab("State") + ylab('Number of Breweries') + ggtitle("Number of Breweries by State") + geom_text(aes(label = n), vjust = -0.5, size = 3)
+  geom_col() + theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Number of Breweries') + 
+  ggtitle("Number of Breweries by State") + geom_text(aes(label = n), vjust = -0.5, size = 3)
 ```
 
 
@@ -149,7 +216,9 @@ Breweries %>% group_by(State) %>% count_()
 ```{r}
 mapBreweries = Breweries %>% group_by(State) %>% count_()
 ```
+
 ```{r}
+# Where do we get statepop? it keeps throwing an error up. 
 mapBreweries$State = as.character(mapBreweries$State)
 mapBreweries$State = sub(" ", "", mapBreweries$State)
 map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
@@ -159,10 +228,33 @@ plot_usmap(data = map2, values = "n", color = "red", labels = TRUE, label_color 
   theme(legend.position = "right")
 ```
 
+```{r}
+# adds a factorized version of IBU to the data set and displays the levels - 108 of them including NA
+BeerBrewery$IBUFac = as.factor(BeerBrewery$IBU)
+BeerBrewery$IBUFac = addNA(BeerBrewery$IBUFac)
+levels(BeerBrewery$IBUFac)
+```
 
+```{r}
+# Shows IBU with and Without the NA
+BeerBrewery %>% group_by(IBUFac) %>% filter(IBU != "NA") %>% summarise(countibu = n()) %>% ggplot(aes(x = IBUFac, y = countibu)) +
+  geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") + theme(axis.text.x = element_text(angle = 90, vjust = -0.05))
 
+BeerBrewery %>% group_by(IBUFac) %>% summarise(countibu = n()) %>% ggplot(aes(x = IBUFac, y = countibu)) +
+  geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") + theme(axis.text.x = element_text(angle = 90, vjust = -0.05))
+```
 
+```{r}
+#Creates a style data frame
+Styles <- BeerBrewery %>% group_by(Style) %>% summarise(CountStyle = n())
+Styles %>% arrange(-CountStyle)
+```
 
+```{r}
+Styles %>% arrange(-CountStyle) %>% slice(1:15) %>% ggplot(aes(x = reorder(Style, CountStyle), y = CountStyle)) + geom_col() +
+  theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) + ylab("Number of Beers") + xlab("Most Popular Styles") + coord_flip() + 
+  ggtitle("15 Most Popular Beer Styles by Style Frequency")
+```
 
 
 
