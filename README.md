@@ -18,6 +18,10 @@ To be added:\
 * We can categorize on IBU and make the NA's a level and we can compare them separate if need be
 
 # Where are the NA's for IBU?
-* Need to gather beer by style to compare.
-* Likely easiest to impute through style
+* Need to gather beer by style to compare - Nix this there about 100 styles.
+* Look at LM, KNN, and Naive Bayes to see which is best at predicting IBU and impute those values
+* BeerBrewery Contains the original and factorized IBU
+* BeerBreweryNA.delete has NA's deleted
+* BeerBreweryNA.impute will have NA's Imputed
+  * Then we can quickly run tests on all 3 to see which is best, or if it even matters
 
