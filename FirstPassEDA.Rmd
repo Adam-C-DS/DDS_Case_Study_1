@@ -27,6 +27,9 @@ library(e1071)
 library(FNN)
 library(MASS)
 library(ggthemes)
+library(caret)
+library(e1071)
+library(reshape2)
 ```
 
 ```{r}
@@ -260,7 +263,17 @@ Styles %>% arrange(-CountStyle) %>% slice(1:15) %>% ggplot(aes(x = reorder(Style
 ```
 
 ```{r}
-linearmodel1 <- lm(IBU ~ ABV, data = BeerBreweryNA.delete)
+set.seed(4)
+splitperc = 0.70
+index<- sample(1:dim(BeerBreweryNA.delete)[1],round(splitperc*dim(BeerBreweryNA.delete)[1]),replace=F)
+train<- Life14[index,]
+test<- Life14[-index,]
+```
+
+
+# Linear Models 1-3
+```{r}
+linearmodel1 <- lm(IBU ~ ABV, data = train)
 summary(linearmodel1)
 ols_plot_resid_fit(linearmodel1)
 ols_plot_resid_lev(linearmodel1)
@@ -270,7 +283,7 @@ ols_plot_cooksd_bar(linearmodel1)
 ```
 
 ```{r}
-linearmodel2 <- lm(log(IBU) ~ poly(log(ABV),3), data = BeerBreweryNA.delete)
+linearmodel2 <- lm(IBU ~ poly(log(ABV),3), data = train)
 summary(linearmodel2)
 ols_plot_resid_fit(linearmodel2)
 ols_plot_resid_lev(linearmodel2)
@@ -280,7 +293,7 @@ ols_plot_cooksd_bar(linearmodel2)
 ```
 
 ```{r}
-linearmodel3 <- lm(scale(IBU) ~ scale(ABV), data = BeerBreweryNA.delete)
+linearmodel3 <- lm(IBU ~ poly(ABV,3), data = train)
 summary(linearmodel3)
 ols_plot_resid_fit(linearmodel3)
 ols_plot_resid_lev(linearmodel3)
@@ -294,4 +307,96 @@ BeerBreweryNA.delete %>% ggplot(aes(x = ABV, y = IBU)) + geom_point() + geom_smo
   ggtitle("Scatterplot of IBU v ABV")
 ```
 
+```{r}
+iterations = 500
+splitperc = 0.70
+# column building
+LModelRMSE1 = c()
+LModelRMSE2 = c()
+LModelRMSE3 = c()
+
+for(i in 1:iterations)
+{
+  set.seed(i)
+  index<- sample(1:dim(BeerBreweryNA.delete)[1],round(splitperc*dim(BeerBreweryNA.delete)[1]),replace=F)
+  train<- BeerBreweryNA.delete[index,]
+  test<- BeerBreweryNA.delete[-index,]
+  
+  predictions1 <- linearmodel1 %>% predict(test)
+  
+  d1 = data.frame(R2 = R2(predictions1,test$IBU), RMSE = RMSE(predictions1,test$IBU), MAE = MAE(predictions1, test$IBU))
+  LModelRMSE1 = c(LModelRMSE1,d1$RMSE)
+  
+  predictions2 <- linearmodel2 %>% predict(test)
+
+  d2 = data.frame(R2 = R2(predictions2,test$IBU), RMSE = RMSE(predictions2,test$IBU), MAE = MAE(predictions2, test$IBU))
+  LModelRMSE2 = c(LModelRMSE2, d2$RMSE)
+  
+  predictions3 <- linearmodel3 %>% predict(test)
+  
+  d3 = data.frame(R2 = R2(predictions3, test$IBU), RMSE = RMSE(predictions3, test$IBU), MAE = MAE(predictions3, test$IBU))
+  
+  LModelRMSE3 = c(LModelRMSE3, d3$RMSE)
+  
+  
+}  
+  
+Linear.Model.Average.RMSE = cbind(LModelRMSE1, LModelRMSE2, LModelRMSE3)
+linearRmsedf = as.data.frame(Linear.Model.Average.RMSE)
+Means = colMeans(Linear.Model.Average.RMSE)
+SDs = round(colSds(Linear.Model.Average.RMSE), 5)
+range1 = max(linearRmsedf$LModelRMSE1) - min(linearRmsedf$LModelRMSE1)
+range2 = max(linearRmsedf$LModelRMSE2) - min(linearRmsedf$LModelRMSE2)
+range3 = max(linearRmsedf$LModelRMSE3) - min(linearRmsedf$LModelRMSE3)
+linearRmsedf = melt(linearRmsedf)
+  
+  
+  
+# Looking at descriptive stats
+Means
+print("Standard Devs")
+SDs
+print("ranges - measure of variance between train/test shuffles")
+print(paste("Model 1 Range" , round(range1, 5)))
+print(paste("Model 2 Range" , round(range2, 5)))
+print(paste("Model 3 Range" , round(range3, 5)))
+cat("Summary: 
+    ")
+summary(Linear.Model.Average.RMSE)
+
+# Scatter
+Pred1 <- data.frame(Value = predictions1, Model = "Linear Model 1")
+Pred2 <- data.frame(Value = predictions2, Model = "Linear Model 2")
+Pred3 <- data.frame(Value = predictions3, Model = "Linear Model 3")
+PredActual <- data.frame(ActualValue = test$IBU)
+PredAll <- rbind(Pred1, Pred2, Pred3)
+PredActual <- rbind(PredActual,PredActual, PredActual)
+PredAll <- cbind(PredAll, PredActual)
+PredAll %>% ggplot(aes(x = Value, y = ActualValue, fill = Model)) + geom_point(aes(color = Model)) + geom_smooth(formula = y~x)+
+facet_wrap(facets = PredAll$Model) + ggtitle("Scatter Plot of Models") + xlab("Predicted") + ylab("Observed")
+
+# Column
+linearRmsedf %>% group_by(variable) %>% summarise(mean = (mean(value))) %>% 
+  ggplot(aes(x = reorder(variable, -mean), y = mean, fill = variable)) + geom_col(width = 0.75) + geom_text(aes(label = round(mean,3), vjust = -0.5)) + 
+  ggtitle("Average RMSE over 500 Shuffles (Linear Models)") + xlab("Model #") + ylab("Mean RMSE")
+
+# Boxplot
+linearRmsedf %>%  ggplot(aes(x = variable, y = value)) + geom_boxplot(aes(fill = variable)) + facet_wrap(~variable,ncol = TRUE) +
+  ggtitle("Mean RMSE Distribution by Model") + ylab("Mean RMSE") + coord_flip() + 
+  theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())
+# Histogram
+linearRmsedf %>%  ggplot(aes(x = value)) + geom_histogram(aes(fill = variable)) + facet_wrap(~variable,ncol = TRUE) +
+  ggtitle("Mean RMSE Distribution by Model") + xlab("Mean RMSE") + 
+  theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())
+
+# Dont forget multiple comparison adjustment
+
+t.test(LModelRMSE1,LModelRMSE2, var.equal = FALSE)
+t.test(LModelRMSE1,LModelRMSE3, var.equal = FALSE)
+t.test(LModelRMSE2,LModelRMSE3, var.equal = FALSE)
+```
+
+```{r}
+
+```
 
