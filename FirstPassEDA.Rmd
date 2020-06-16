@@ -266,8 +266,8 @@ Styles %>% arrange(-CountStyle) %>% slice(1:15) %>% ggplot(aes(x = reorder(Style
 set.seed(4)
 splitperc = 0.70
 index<- sample(1:dim(BeerBreweryNA.delete)[1],round(splitperc*dim(BeerBreweryNA.delete)[1]),replace=F)
-train<- Life14[index,]
-test<- Life14[-index,]
+train<- BeerBreweryNA.delete[index,]
+test<- BeerBreweryNA.delete[-index,]
 ```
 
 
