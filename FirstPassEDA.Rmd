@@ -273,6 +273,7 @@ test<- Life14[-index,]
 
 # Linear Models 1-3
 ```{r}
+# Very Simple
 linearmodel1 <- lm(IBU ~ ABV, data = train)
 summary(linearmodel1)
 ols_plot_resid_fit(linearmodel1)
@@ -283,6 +284,7 @@ ols_plot_cooksd_bar(linearmodel1)
 ```
 
 ```{r}
+# Pretty Complex
 linearmodel2 <- lm(IBU ~ poly(log(ABV),3), data = train)
 summary(linearmodel2)
 ols_plot_resid_fit(linearmodel2)
@@ -293,6 +295,7 @@ ols_plot_cooksd_bar(linearmodel2)
 ```
 
 ```{r}
+# Medium Complexity
 linearmodel3 <- lm(IBU ~ poly(ABV,3), data = train)
 summary(linearmodel3)
 ols_plot_resid_fit(linearmodel3)
@@ -395,8 +398,18 @@ t.test(LModelRMSE1,LModelRMSE2, var.equal = FALSE)
 t.test(LModelRMSE1,LModelRMSE3, var.equal = FALSE)
 t.test(LModelRMSE2,LModelRMSE3, var.equal = FALSE)
 ```
-
+# NaiveBayes Prediction
 ```{r}
+# predict(NBmodel, newdata, type = raw) / type = raw for probabilities
+# naiveBayes(predictors, response, laplace)
+NB.Model.1 <- naiveBayes(train[,c(2,4,6)], train$IBUFac)
+table(predict(NB.Model.1,test[,c(2,4,6)]), test$IBUFac)
+CM = confusionMatrix(table(predict(NB.Model.1,test[,c(2,4,6)]), test$IBU))
+CM  
+  #AccuracyAgg = c(AccuracyAgg, CM$overall[1])
+  #SensitivityAgg = c(SensitivityAgg,CM$byClass[1] )
+  #SpecificityAgg = c(SpecificityAgg,CM$byClass[2] )
+
 
 ```
 
