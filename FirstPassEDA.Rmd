@@ -497,3 +497,36 @@ for(i in 1:iterations)
 RMSE.KNN1.AGG = as.data.frame(RMSE.KNN1.AGG)
 mean(RMSE.KNN1.AGG$RMSE.KNN1.AGG)
 ```
+
+```{r}
+# Uses linear model 1 to predict IBU from ABV -  need to break the predictions out of the KNN next
+# This predicts right into BeerBrewery we may need to offload these into a second data set depending on analysis needs.
+BeerBrewery <- BeerBrewery %>% mutate(Prediction = predict(linearmodel1, .)) %>% mutate(IBU = ifelse(is.na(IBU), Prediction, IBU))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
