@@ -276,12 +276,16 @@ Styles %>% arrange(-CountStyle) %>% slice(1:15) %>% ggplot(aes(x = reorder(Style
 
 Need to look at ABV Distribution - looks approximately normal with a small right skew - QQplot indicates we might be able to log variable
 ```{r}
-# If we take off the meaningless y axis stuff it un-centers the graphs - better to have it on or off? Currently on
+# If we take off the meaningless y axis stuff from the boxplot it un-centers it from the histogram - better to have it on center? Currently on
 g1 = BeerBrewery %>% ggplot(aes(x = ABV)) + geom_histogram(binwidth = 0.0025) + xlim(0,0.125) +
   theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+
 g2 = BeerBrewery %>% ggplot(aes(x = ABV)) + geom_boxplot() + xlim(0,0.125) + theme(axis.ticks.y = element_blank())#, axis.text.y = element_blank())
+
 g3 = BeerBrewery %>% ggplot(aes(sample = ABV)) + stat_qq_line() + stat_qq() + ylim(0,0.125) + xlab("Quantile") + ylab("ABV")
+
 g4 = ggdraw() + draw_label("Distribution Characteristics \nof ABV", color = "Gray2", size = 20)
+
 plot_grid(g1,g3,g2,g4, ncol = 2)
 ```
 
