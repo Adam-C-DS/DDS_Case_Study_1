@@ -1,6 +1,6 @@
 ---
 title: "First Pass DDS 1"
-author: "Adam Canton"
+author: "Adam Canton & Carl Keusseyan"
 date: "6/10/2020"
 output: html_document
 ---
@@ -20,6 +20,7 @@ library(cowplot)
 library(ggExtra)
 library(ggthemes)
 library(maps)
+library(usmap)
 library(naniar)
 library(olsrr)
 library(stringr)
@@ -34,8 +35,8 @@ library(reshape2)
 
 ```{r}
 # pulling datasets
-Beers <- read.csv(file = "F:/R For Real/DDS Project 1/DDS-Project-1/Beers.csv")
-Breweries <- read.csv(file = "F:/R For Real/DDS Project 1/DDS-Project-1/Breweries.csv")
+Beers <- read.csv(file.choose())
+Breweries <- read.csv(file.choose())
 
 # Merge Beer and Brewery
 BeerBrewery = merge(Beers, Breweries, by.x = "Brewery_id", by.y = "Brew_ID")
