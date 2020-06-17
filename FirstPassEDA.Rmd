@@ -91,7 +91,6 @@ BeerBrewery$IBU[186] = 65
 BeerBrewery$ABV[193] = 0.060
 BeerBrewery$IBU[193] = 23
 ## 227 Cedar Creek Brewery Special Release commented above
-
 ## 252 James Page Brewing Company Bastian 6.2% no IBU
 BeerBrewery$ABV[252] = 0.062
 ## 440 Crazy Mountain Brewing Company Winter Wondergrass Festival Ale 4.9% no IBU
@@ -221,8 +220,8 @@ Breweries %>% group_by(State) %>% count_()
 mapBreweries = Breweries %>% group_by(State) %>% count_()
 ```
 
-```{r}
-# Where do we get statepop? it keeps throwing an error up. 
+```{r, warning=FALSE}
+# Perfect! This looks amazing!
 mapBreweries$State = as.character(mapBreweries$State)
 mapBreweries$State = sub(" ", "", mapBreweries$State)
 map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
@@ -237,18 +236,30 @@ plot_usmap(data = map2, values = "n", color = "red", labels = TRUE, label_color 
 BeerBrewery$IBUFac = as.factor(BeerBrewery$IBU)
 BeerBrewery$IBUFac = addNA(BeerBrewery$IBUFac)
 levels(BeerBrewery$IBUFac)
-```
-```{r}
+
+# Creates a Data set that mirrors the original but with NA's deleted
 BeerBreweryNA.delete = BeerBrewery %>% filter(IBU != "NA")
 ```
 
 ```{r}
-# Shows IBU with and Without the NA
+# Shows IBU with and Without the NA - Full Set
 BeerBrewery %>% group_by(IBUFac) %>% filter(IBU != "NA") %>% summarise(countibu = n()) %>% ggplot(aes(x = IBUFac, y = countibu)) +
   geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") + theme(axis.text.x = element_text(angle = 90, vjust = -0.05))
 
 BeerBrewery %>% group_by(IBUFac) %>% summarise(countibu = n()) %>% ggplot(aes(x = IBUFac, y = countibu)) +
   geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") + theme(axis.text.x = element_text(angle = 90, vjust = -0.05))
+
+# The next set shows the same thing but with only the top 15 -  
+## I think this may get the point across better. I think we should lead with the full set of heres everything just to get a feel for how big this stuff really
+## is - then switch to the top x - that way side by side comparisons are easier and we have reference beers/styles/IBUs/ to talk about.
+BeerBrewery %>% group_by(IBUFac) %>% filter(IBU != "NA") %>% summarise(countibu = n()) %>%
+  arrange(-countibu) %>% slice(1:15)  %>% ggplot(aes(x = IBUFac, y = countibu)) +
+  geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = -0.05))
+
+BeerBrewery %>% group_by(IBUFac) %>% summarise(countibu = n()) %>% arrange(-countibu) %>% slice(1:15) %>%
+  ggplot(aes(x = IBUFac, y = countibu)) + geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") +
+  theme(axis.text.x = element_text(angle = 90, vjust = -0.05))
 ```
 
 ```{r}
@@ -263,7 +274,19 @@ Styles %>% arrange(-CountStyle) %>% slice(1:15) %>% ggplot(aes(x = reorder(Style
   ggtitle("15 Most Popular Beer Styles by Style Frequency")
 ```
 
+Need to look at ABV Distribution - looks approximately normal with a small right skew - QQplot indicates we might be able to log variable
 ```{r}
+# If we take off the meaningless y axis stuff it un-centers the graphs - better to have it on or off? Currently on
+g1 = BeerBrewery %>% ggplot(aes(x = ABV)) + geom_histogram(binwidth = 0.0025) + xlim(0,0.125) +
+  theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+g2 = BeerBrewery %>% ggplot(aes(x = ABV)) + geom_boxplot() + xlim(0,0.125) + theme(axis.ticks.y = element_blank())#, axis.text.y = element_blank())
+g3 = BeerBrewery %>% ggplot(aes(sample = ABV)) + stat_qq_line() + stat_qq() + ylim(0,0.125) + xlab("Quantile") + ylab("ABV")
+g4 = ggdraw() + draw_label("Distribution Characteristics \nof ABV", color = "Gray2", size = 20)
+plot_grid(g1,g3,g2,g4, ncol = 2)
+```
+
+```{r}
+# Current seed set to 4.
 set.seed(4)
 splitperc = 0.70
 index<- sample(1:dim(BeerBreweryNA.delete)[1],round(splitperc*dim(BeerBreweryNA.delete)[1]),replace=F)
@@ -271,8 +294,7 @@ train<- BeerBreweryNA.delete[index,]
 test<- BeerBreweryNA.delete[-index,]
 ```
 
-
-# Linear Models 1-3
+# Linear Models 1-3: Looking at how well a linear model will predict/impute the data. 
 ```{r}
 # Very Simple
 linearmodel1 <- lm(IBU ~ ABV, data = train)
@@ -285,7 +307,18 @@ ols_plot_cooksd_bar(linearmodel1)
 ```
 
 ```{r}
-# Pretty Complex
+# Very Simple
+linearmodel1.log <- lm(log(IBU) ~ ABV, data = train)
+summary(linearmodel1)
+ols_plot_resid_fit(linearmodel1)
+ols_plot_resid_lev(linearmodel1)
+ols_plot_resid_qq(linearmodel1)
+ols_plot_resid_hist(linearmodel1)
+ols_plot_cooksd_bar(linearmodel1)
+```
+
+```{r}
+# Pretty Complex - came up with this playing around. there is some curvature present in the Resdiual Normal QQ - however 
 linearmodel2 <- lm(IBU ~ poly(log(ABV),3), data = train)
 summary(linearmodel2)
 ols_plot_resid_fit(linearmodel2)
@@ -297,7 +330,7 @@ ols_plot_cooksd_bar(linearmodel2)
 
 ```{r}
 # Medium Complexity
-linearmodel3 <- lm(IBU ~ poly(ABV,3), data = train)
+linearmodel3 <- lm(log(IBU) ~ poly(log(ABV,3)), data = train)
 summary(linearmodel3)
 ols_plot_resid_fit(linearmodel3)
 ols_plot_resid_lev(linearmodel3)
@@ -305,6 +338,13 @@ ols_plot_resid_qq(linearmodel3)
 ols_plot_resid_hist(linearmodel3)
 ols_plot_cooksd_bar(linearmodel3)
 ```
+
+There is some serious correlation in the above residual plots which is a bit troubling. This would suggest we need a correction of some sort or more predictors (of which we have none). Logging the response does not help (model 1 v logmodel1 and model 2 v model 3). Model 2 gets rid of a lot of the correlation - but adds a non-constant variance violation, which again is not alleviated by log transforms.
+
+All this leads me to think we may want a non-parametric model. Thus the Naive Bayes (Though the conditional independence may be violated). I think this will have the advantage over KNN for 2 reasons: 
+
+1) We will want to try non-numeric variable types. 
+2) KNN works best with scaled numeric variables - the scaling, as well as the KNN, creates issues with interpretation - this doesn't completly exclude it but maybe works best as a last resort.
 
 ```{r}
 BeerBreweryNA.delete %>% ggplot(aes(x = ABV, y = IBU)) + geom_point() + geom_smooth(formula = y~x) + xlim(0,0.15) + geom_jitter() + 
@@ -376,6 +416,8 @@ PredActual <- data.frame(ActualValue = test$IBU)
 PredAll <- rbind(Pred1, Pred2, Pred3)
 PredActual <- rbind(PredActual,PredActual, PredActual)
 PredAll <- cbind(PredAll, PredActual)
+
+#Are the fits shown here a bit misleading compared to their equations?
 PredAll %>% ggplot(aes(x = Value, y = ActualValue, fill = Model)) + geom_point(aes(color = Model)) + geom_smooth(formula = y~x)+
 facet_wrap(facets = PredAll$Model) + ggtitle("Scatter Plot of Models") + xlab("Predicted") + ylab("Observed")
 
@@ -399,18 +441,39 @@ t.test(LModelRMSE1,LModelRMSE2, var.equal = FALSE)
 t.test(LModelRMSE1,LModelRMSE3, var.equal = FALSE)
 t.test(LModelRMSE2,LModelRMSE3, var.equal = FALSE)
 ```
-# NaiveBayes Prediction
+# NaiveBayes Prediction - This is apparently more difficult than anticipated, messed with this for awhile. - Checking KNN
 ```{r}
+# This is currently broke I think
 # predict(NBmodel, newdata, type = raw) / type = raw for probabilities
 # naiveBayes(predictors, response, laplace)
-NB.Model.1 <- naiveBayes(train[,c(2,4,6)], train$IBUFac)
-table(predict(NB.Model.1,test[,c(2,4,6)]), test$IBUFac)
-CM = confusionMatrix(table(predict(NB.Model.1,test[,c(2,4,6)]), test$IBU))
-CM  
-  #AccuracyAgg = c(AccuracyAgg, CM$overall[1])
-  #SensitivityAgg = c(SensitivityAgg,CM$byClass[1] )
-  #SpecificityAgg = c(SpecificityAgg,CM$byClass[2] )
-
+NB.Model.1 <- naiveBayes(train[,4], train$IBUFac)
+predict(NB.Model.1, data.frame(ABV = 0.094), type = "raw")
 
 ```
 
+```{r}
+# This is up and running. Need to find optimal k and add scaled variables for better analysis. Currently predicting right with LM
+iterations = 50
+RMSE.KNN1.AGG = c()
+
+for(i in 1:iterations)
+{
+  #set.seed(i)
+  index<- sample(1:dim(BeerBreweryNA.delete)[1],round(splitperc*dim(BeerBreweryNA.delete)[1]),replace=F)
+  train<- BeerBreweryNA.delete[index,]
+  test<- BeerBreweryNA.delete[-index,]
+  KNN.Model1 <- knn.reg(as.data.frame(train[,4]), as.data.frame(test[,4]), train$IBU, k=5)
+  KNN.Predictions1 = as.data.frame(KNN.Model1$pred)
+  names(KNN.Predictions1)[1] <- "Predictions"
+  
+  PredvActual <- data.frame(Predictions = c(KNN.Predictions1), Actual = c(test$IBU))
+  PredvActual = PredvActual %>% mutate(ResidSquError1 = (Predictions - Actual)^2)
+
+  RMSE.KNN1 = sqrt(mean(PredvActual$ResidSquError1))
+  #print(RMSE.KNN1)
+  RMSE.KNN1.AGG = c(RMSE.KNN1.AGG, RMSE.KNN1)
+
+}
+RMSE.KNN1.AGG = as.data.frame(RMSE.KNN1.AGG)
+mean(RMSE.KNN1.AGG$RMSE.KNN1.AGG)
+```
