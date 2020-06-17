@@ -53,9 +53,7 @@ tail(BeerBrewery, 6)
 
 ```{r}
 gg_miss_var(BeerBrewery)
-```
 
-```{r}
 na_count <- sapply(BeerBrewery, function(y) sum(length(which(is.na(y)))))
 na_count <- data.frame(na_count)
 na_count
@@ -78,7 +76,7 @@ na_count
 ```
 
 ```{r}
-# Comments on 62 missing ABV Data -  most of this is likely recoverable - ## row | brewery | beer | ABV | IBU if avail
+# Filled in researched Data and Intialize Data sets
 
 ## 75 Brewery Vivant Fat Paczki - 7.5%
 BeerBrewery$ABV[75] = 0.075
@@ -110,7 +108,7 @@ BeerBrewery$ABV[511] = 0.055
 BeerBrewery$ABV[568] = 0.055
 ## 569 Keweenaw Brewing Company November Gale Pale Ale 5% - 5 IBU
 BeerBrewery$ABV[569] = 0.050
-BeerBrewery$ABV[569] = 5
+BeerBrewery$IBU[569] = 5
 ## 570 Keweenaw Brewing Company Olde Ore Dock Scottish Ale 7%
 BeerBrewery$ABV[570] = 0.070
 ## 571 Keweenaw Brewing Company Widow Maker Black Ale 5.2%
@@ -189,11 +187,24 @@ BeerBrewery$ABV[2365] = 0.05
 BeerBrewery$ABV[2370] = 0.072
 ## 2394 Prescott Brewing Company Ponderosa IPA 6.5 70
 BeerBrewery$ABV[2394] = 0.065
-BeerBrewery$ABV[2394] = 70
+BeerBrewery$IBU[2394] = 70
 ## 2395 Prescott Brewing Company Liquid Amber Ale 5 17
 BeerBrewery$ABV[2395] = 0.050
 BeerBrewery$IBU[2395] = 17
 
+
+# adds a factorized version of IBU to the data set and displays the levels - 108 of them including NA
+BeerBrewery$IBUFac = as.factor(BeerBrewery$IBU)
+BeerBrewery$IBUFac = addNA(BeerBrewery$IBUFac)
+#levels(BeerBrewery$IBUFac)
+
+# Creates ABV Factor based on summary of the column: Weak - Abv(0<0.056), Normal - Abv(0.056<= 0.067), Strong - Abv(>0.067)
+ABVFac = cut(BeerBrewery$ABV, breaks = c(0,0.056,0.067,0.15), labels = c("Weak ( < 0.056)", "Normal (0.056 - 0.067)", "Strong (0.067 <)"))
+BeerBrewery = cbind(BeerBrewery,ABVFac)
+
+# Creates a Data set that mirrors the original but with NA's deleted
+BeerBreweryNA.delete = BeerBrewery %>% filter(IBU != "NA")
+BeerBreweryNA.predict = BeerBrewery %>% filter(is.na(IBU))
 ```
 
 ```{r}
@@ -209,11 +220,6 @@ BeerBrewery$IBU[2395] = 17
 Breweries %>% group_by(State) %>% count_() %>% ggplot(aes(x = reorder(State, -n), y = n )) +
   geom_col() + theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Number of Breweries') + 
   ggtitle("Number of Breweries by State") + geom_text(aes(label = n), vjust = -0.5, size = 3)
-```
-
-
-```{r}
-Breweries %>% group_by(State) %>% count_()
 ```
 
 ```{r}
@@ -232,16 +238,6 @@ plot_usmap(data = map2, values = "n", color = "red", labels = TRUE, label_color 
 ```
 
 ```{r}
-# adds a factorized version of IBU to the data set and displays the levels - 108 of them including NA
-BeerBrewery$IBUFac = as.factor(BeerBrewery$IBU)
-BeerBrewery$IBUFac = addNA(BeerBrewery$IBUFac)
-levels(BeerBrewery$IBUFac)
-
-# Creates a Data set that mirrors the original but with NA's deleted
-BeerBreweryNA.delete = BeerBrewery %>% filter(IBU != "NA")
-```
-
-```{r}
 # Shows IBU with and Without the NA - Full Set
 BeerBrewery %>% group_by(IBUFac) %>% filter(IBU != "NA") %>% summarise(countibu = n()) %>% ggplot(aes(x = IBUFac, y = countibu)) +
   geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") + theme(axis.text.x = element_text(angle = 90, vjust = -0.05))
@@ -253,25 +249,28 @@ BeerBrewery %>% group_by(IBUFac) %>% summarise(countibu = n()) %>% ggplot(aes(x 
 ## I think this may get the point across better. I think we should lead with the full set of heres everything just to get a feel for how big this stuff really
 ## is - then switch to the top x - that way side by side comparisons are easier and we have reference beers/styles/IBUs/ to talk about.
 BeerBrewery %>% group_by(IBUFac) %>% filter(IBU != "NA") %>% summarise(countibu = n()) %>%
-  arrange(-countibu) %>% slice(1:15)  %>% ggplot(aes(x = IBUFac, y = countibu)) +
-  geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") + 
+  arrange(-countibu) %>% slice(1:15)  %>% ggplot(aes(x = reorder(IBUFac, countibu), y = countibu)) +
+  geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") + coord_flip()
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05))
 
 BeerBrewery %>% group_by(IBUFac) %>% summarise(countibu = n()) %>% arrange(-countibu) %>% slice(1:15) %>%
-  ggplot(aes(x = IBUFac, y = countibu)) + geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") +
-  theme(axis.text.x = element_text(angle = 90, vjust = -0.05))
+  ggplot(aes(x = reorder(IBUFac, countibu), y = countibu)) + geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") +
+  coord_flip() + theme(axis.text.x = element_text(angle = 90, vjust = -0.05))
 ```
 
 ```{r}
-#Creates a style data frame
-Styles <- BeerBrewery %>% group_by(Style) %>% summarise(CountStyle = n())
-Styles %>% arrange(-CountStyle)
-```
-
-```{r}
-Styles %>% arrange(-CountStyle) %>% slice(1:15) %>% ggplot(aes(x = reorder(Style, CountStyle), y = CountStyle)) + geom_col() +
+# Display top 15 Styles by count
+BeerBrewery %>% group_by(Style) %>% summarise(CountStyle = n()) %>% arrange(-CountStyle) %>% slice(1:15) %>%
+  ggplot(aes(x = reorder(Style, CountStyle), y = CountStyle)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) + ylab("Number of Beers") + xlab("Most Popular Styles") + coord_flip() + 
   ggtitle("15 Most Popular Beer Styles by Style Frequency")
+```
+
+```{r}
+# Looking at ABV by factor - do these breaks work? need adjusting?
+BeerBrewery %>% group_by(ABVFac) %>% summarise(CountABVFac = n()) %>% 
+  ggplot(aes(x = reorder(ABVFac, -CountABVFac), y = CountABVFac)) + geom_col(width = 0.75) + geom_text(aes(label = CountABVFac), vjust = -0.5, size = 4) + 
+  xlab("ABV Category") + ylab("Frequency") + ggtitle("Number of Beers by ABV Factor")
 ```
 
 Need to look at ABV Distribution - looks approximately normal with a small right skew - QQplot indicates we might be able to log variable
@@ -287,6 +286,25 @@ g3 = BeerBrewery %>% ggplot(aes(sample = ABV)) + stat_qq_line() + stat_qq() + yl
 g4 = ggdraw() + draw_label("Distribution Characteristics \nof ABV", color = "Gray2", size = 20)
 
 plot_grid(g1,g3,g2,g4, ncol = 2)
+```
+
+```{r}
+# I'll have to check this out later - not working at the moment
+g1 = BeerBreweryNA.delete %>% ggplot(aes(x = IBU)) + geom_histogram(binwidth = 2) + xlim(0,150) +
+  theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+
+g2 = BeerBreweryNA.delete %>% ggplot(aes(x = IBU)) + geom_boxplot() + xlim(0,150) + theme(axis.ticks.y = element_blank())#, axis.text.y = element_blank())
+
+g3 = BeerBreweryNA.delete %>% ggplot(aes(sample = IBU)) + stat_qq_line() + stat_qq() + ylim(0,150) + xlab("Quantile") + ylab("IBU")
+
+g4 = ggdraw() + draw_label("Distribution Characteristics \nof IBU", color = "Gray2", size = 20)
+
+plot_grid(g1,g3,g2,g4, ncol = 2)
+```
+
+```{r}
+BeerBreweryNA.delete %>% ggplot(aes(x = ABV, y = IBU)) + geom_point() + geom_smooth(formula = y~x) + xlim(0,0.15) + geom_jitter() + 
+  ggtitle("Scatterplot of IBU v ABV")
 ```
 
 ```{r}
@@ -311,14 +329,15 @@ ols_plot_cooksd_bar(linearmodel1)
 ```
 
 ```{r}
-# Very Simple
+# Very Simple with a log
 linearmodel1.log <- lm(log(IBU) ~ ABV, data = train)
-summary(linearmodel1)
-ols_plot_resid_fit(linearmodel1)
-ols_plot_resid_lev(linearmodel1)
-ols_plot_resid_qq(linearmodel1)
-ols_plot_resid_hist(linearmodel1)
-ols_plot_cooksd_bar(linearmodel1)
+summary(linearmodel1.log)
+ols_plot_resid_fit(linearmodel1.log)
+ols_plot_resid_lev(linearmodel1.log)
+ols_plot_resid_qq(linearmodel1.log)
+ols_plot_resid_hist(linearmodel1.log)
+ols_plot_cooksd_bar(linearmodel1.log)
+
 ```
 
 ```{r}
@@ -350,10 +369,7 @@ All this leads me to think we may want a non-parametric model. Thus the Naive Ba
 1) We will want to try non-numeric variable types. 
 2) KNN works best with scaled numeric variables - the scaling, as well as the KNN, creates issues with interpretation - this doesn't completly exclude it but maybe works best as a last resort.
 
-```{r}
-BeerBreweryNA.delete %>% ggplot(aes(x = ABV, y = IBU)) + geom_point() + geom_smooth(formula = y~x) + xlim(0,0.15) + geom_jitter() + 
-  ggtitle("Scatterplot of IBU v ABV")
-```
+
 
 ```{r}
 iterations = 500
