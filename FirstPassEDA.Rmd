@@ -562,6 +562,10 @@ Ale = Ale %>% mutate(IPAorAle = "Ale")
 Bud = rbind(IPA,Ale)
 ```
 
+```{r}
+which.max(BeerBreweryPredicted$ABV)
+which.max(BeerBreweryPredicted$IBU)
+```
 
 
 
