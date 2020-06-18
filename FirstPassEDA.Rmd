@@ -170,6 +170,8 @@ BeerBrewery$ABV[2242] = 0.055
 ## 2262 Cans Bar and Canteen THP Dark (2006) Closed
 ## 2296 Spilker Ales Hopluia (2004) 5.2
 BeerBrewery$ABV[2296] = 0.052
+## 2323 Scotty K NA is a non-alcoholic beer that has no IBU.
+BeerBrewery$IBU[2323] = 0.0
 ## 2345 Buckbean Brewing Company Roler Bock 7.2
 BeerBrewery$ABV[2345] = 0.072
 ## 2351 Dolores River Brewery Dolores River Hefeweizen No Info
@@ -563,8 +565,15 @@ Bud = rbind(IPA,Ale)
 ```
 
 ```{r}
-which.max(BeerBreweryPredicted$ABV)
-which.max(BeerBreweryPredicted$IBU)
+sprintf("The Max ABV is %s, from the beer %s,in State %s",
+        BeerBreweryPredicted$ABV[which.max(BeerBreweryPredicted$ABV)],
+        BeerBreweryPredicted$Beer[which.max(BeerBreweryPredicted$ABV)],
+        BeerBreweryPredicted$State[which.max(BeerBreweryPredicted$ABV)])
+
+sprintf("The Max IBU is %s, from the beer %s,in State %s",
+        BeerBreweryPredicted$IBU[which.max(BeerBreweryPredicted$IBU)],
+        BeerBreweryPredicted$Beer[which.max(BeerBreweryPredicted$IBU)],
+        BeerBreweryPredicted$State[which.max(BeerBreweryPredicted$IBU)])
 ```
 
 
