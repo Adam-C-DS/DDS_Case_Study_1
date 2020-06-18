@@ -47,6 +47,7 @@ names(BeerBrewery)[8] <- "Brewery"
 ```
 
 ```{r}
+# This is analysis question 2 ----
 head(BeerBrewery, 6)
 tail(BeerBrewery, 6)
 ```
@@ -199,7 +200,7 @@ BeerBrewery$IBUFac = addNA(BeerBrewery$IBUFac)
 #levels(BeerBrewery$IBUFac)
 
 # Creates ABV Factor based on summary of the column: Weak - Abv(0<0.056), Normal - Abv(0.056<= 0.067), Strong - Abv(>0.067)
-ABVFac = cut(BeerBrewery$ABV, breaks = c(0,0.056,0.067,0.15), labels = c("Weak ( < 0.056)", "Normal (0.056 - 0.067)", "Strong (0.067 <)"))
+ABVFac = cut(BeerBrewery$ABV, breaks = c(0,0.04,0.07,0.15), labels = c("Weak ( < 0.04)", "Normal (0.04 - 0.07)", "Strong ( >7)"))
 BeerBrewery = cbind(BeerBrewery,ABVFac)
 
 # Creates a Data set that mirrors the original but with NA's deleted
@@ -216,18 +217,16 @@ BeerBreweryNA.predict = BeerBrewery %>% filter(is.na(IBU))
 
 
 ```{r}
-# Show number of breweries by state - needs some color
+# This is analysis question 1 ----
+# Show number of breweries by state - needs some color 
 Breweries %>% group_by(State) %>% count_() %>% ggplot(aes(x = reorder(State, -n), y = n )) +
   geom_col() + theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Number of Breweries') + 
   ggtitle("Number of Breweries by State") + geom_text(aes(label = n), vjust = -0.5, size = 3)
 ```
 
-```{r}
-mapBreweries = Breweries %>% group_by(State) %>% count_()
-```
-
 ```{r, warning=FALSE}
 # Perfect! This looks amazing!
+mapBreweries = Breweries %>% group_by(State) %>% count_()
 mapBreweries$State = as.character(mapBreweries$State)
 mapBreweries$State = sub(" ", "", mapBreweries$State)
 map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
@@ -267,14 +266,15 @@ BeerBrewery %>% group_by(Style) %>% summarise(CountStyle = n()) %>% arrange(-Cou
 ```
 
 ```{r}
-# Looking at ABV by factor - do these breaks work? need adjusting?
-BeerBrewery %>% group_by(ABVFac) %>% summarise(CountABVFac = n()) %>% 
-  ggplot(aes(x = reorder(ABVFac, -CountABVFac), y = CountABVFac)) + geom_col(width = 0.75) + geom_text(aes(label = CountABVFac), vjust = -0.5, size = 4) + 
+# Looking at ABV by factor - do these breaks work? need adjusting? Most people prefer normal and more prefer strong to weak.
+BeerBrewery %>% group_by(ABVFac) %>% summarise(CountABVFac = n()) %>% na.omit() %>%
+  ggplot(aes(x = ABVFac, y = CountABVFac)) + geom_col(width = 0.75) + geom_text(aes(label = CountABVFac), vjust = -0.5, size = 4) + 
   xlab("ABV Category") + ylab("Frequency") + ggtitle("Number of Beers by ABV Factor")
 ```
 
 Need to look at ABV Distribution - looks approximately normal with a small right skew - QQplot indicates we might be able to log variable
 ```{r}
+# Analysis of project number 6 ----
 # If we take off the meaningless y axis stuff from the boxplot it un-centers it from the histogram - better to have it on center? Currently on
 g1 = BeerBrewery %>% ggplot(aes(x = ABV)) + geom_histogram(binwidth = 0.0025) + xlim(0,0.125) +
   theme(axis.title.x = element_blank(), axis.title.y = element_blank())
@@ -415,7 +415,6 @@ range3 = max(linearRmsedf$LModelRMSE3) - min(linearRmsedf$LModelRMSE3)
 linearRmsedf = melt(linearRmsedf)
   
   
-  
 # Looking at descriptive stats
 Means
 print("Standard Devs")
@@ -450,6 +449,7 @@ linearRmsedf %>% group_by(variable) %>% summarise(mean = (mean(value))) %>%
 linearRmsedf %>%  ggplot(aes(x = variable, y = value)) + geom_boxplot(aes(fill = variable)) + facet_wrap(~variable,ncol = TRUE) +
   ggtitle("Mean RMSE Distribution by Model") + ylab("Mean RMSE") + coord_flip() + 
   theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())
+
 # Histogram
 linearRmsedf %>%  ggplot(aes(x = value)) + geom_histogram(aes(fill = variable)) + facet_wrap(~variable,ncol = TRUE) +
   ggtitle("Mean RMSE Distribution by Model") + xlab("Mean RMSE") + 
@@ -501,18 +501,66 @@ mean(RMSE.KNN1.AGG$RMSE.KNN1.AGG)
 ```{r}
 # Uses linear model 1 to predict IBU from ABV -  need to break the predictions out of the KNN next
 # This predicts right into BeerBrewery we may need to offload these into a second data set depending on analysis needs.
-BeerBrewery <- BeerBrewery %>% mutate(Prediction = predict(linearmodel1, .)) %>% mutate(IBU = ifelse(is.na(IBU), Prediction, IBU))
+BeerBreweryPredicted <- BeerBrewery %>% mutate(Prediction = predict(linearmodel2, .)) %>% mutate(IBU = ifelse(is.na(IBU), Prediction, IBU))
 
 ```
 
 
+```{r, warning=FALSE}
+BeerBreweryPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV)) %>% arrange(-StateMedian) %>% slice(1:15) %>%
+  ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
+  theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
+  ggtitle("Median ABV By State (Highest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
+
+# Perfect! This looks amazing!
+mapBreweries = BeerBreweryPredicted %>% na.omit() %>% group_by(State) %>% summarise(StateMedian = median(ABV))
+mapBreweries$State = as.character(mapBreweries$State)
+mapBreweries$State = sub(" ", "", mapBreweries$State)
+map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
+plot_usmap(data = map2, values = "StateMedian", color = "red", labels = TRUE, label_color = "white") + 
+  scale_fill_continuous(name = "Brewery count", label = scales::comma) + 
+  labs(title = "USA MAP", subtitle="Median ABV by State") +
+  theme(legend.position = "right")
+```
+
+```{r}
+BeerBreweryPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV)) %>% arrange(StateMedian) %>% slice(1:15) %>%
+  ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
+  theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
+  ggtitle("Median ABV By State (Lowest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
+```
+
+```{r, warning=FALSE}
+BeerBreweryPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(IBU)) %>% arrange(-StateMedian) %>% slice(1:15) %>%
+  ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
+  theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
+  ggtitle("Median IBU By State (Highest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
+
+# Perfect! This looks amazing!
+mapBreweries = BeerBreweryPredicted %>% na.omit() %>% group_by(State) %>% summarise(StateMedian = median(IBU))
+mapBreweries$State = as.character(mapBreweries$State)
+mapBreweries$State = sub(" ", "", mapBreweries$State)
+map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
+plot_usmap(data = map2, values = "StateMedian", color = "red", labels = TRUE, label_color = "white") + 
+  scale_fill_continuous(name = "Brewery count", label = scales::comma) + 
+  labs(title = "USA MAP", subtitle="Median IBU by State") +
+  theme(legend.position = "right")
+```
 
 
+```{r}
+BeerBreweryPredicted = BeerBreweryPredicted %>% mutate(StyleChar = as.character(Style))
+IPA = BeerBreweryPredicted %>% filter(str_detect(StyleChar,"IPA"))
+Ale = BeerBreweryPredicted %>% filter(str_detect(StyleChar,"Ale")) %>% filter(!str_detect(StyleChar,"India Pale Ale"))
+AleIPA = Ale %>% filter(str_detect(StyleChar,"IPA"))
+```
 
+```{r}
+IPA = IPA %>% mutate(IPAorAle = "IPA") 
+Ale = Ale %>% mutate(IPAorAle = "Ale")
 
-
-
-
+Bud = rbind(IPA,Ale)
+```
 
 
 
