@@ -31,6 +31,7 @@ library(ggthemes)
 library(caret)
 library(e1071)
 library(reshape2)
+library(RANN)
 ```
 
 ```{r}
@@ -38,45 +39,17 @@ library(reshape2)
 Beers <- read.csv(file.choose())
 Breweries <- read.csv(file.choose())
 
-# Merge Beer and Brewery
+# Merge Beer and Brewery 
 BeerBrewery = merge(Beers, Breweries, by.x = "Brewery_id", by.y = "Brew_ID")
 
 # Change some column names for tidyness
 names(BeerBrewery)[2] <- "Beer"
 names(BeerBrewery)[8] <- "Brewery"
-```
-
-```{r}
-# This is analysis question 2 ----
-head(BeerBrewery, 6)
-tail(BeerBrewery, 6)
-```
-
-```{r}
-gg_miss_var(BeerBrewery)
-
-na_count <- sapply(BeerBrewery, function(y) sum(length(which(is.na(y)))))
-na_count <- data.frame(na_count)
-na_count
-```
-
-
-```{r}
-# Comments on missing Style Data:
-
-## n(227) Cedar Creek Brewery Special Release - actually refers to 2 different beers Smoked Cherry Quad and Excelsior (Imperial Milk Stout) - https://www.cedarcreekbrewery.com/special-release-beers maybe average them out? ABV - 9.2 v 9.8,  IBU - 33 v 47, Average 9.5 and 40 
-
-## n(455) Freetail Brewing Oktoberfiesta - Style is Marzen/Oktoberfest - https://www.freetailbrewing.com/our-brews/
-
-## n(946) Four Peaks Kilt Lifter Scottish Ale -  Style is Amber Ale - https://www.beeradvocate.com/beer/profile/2171/6218/
-
-## n(992) Oskar Blues The Crowler - Doesnt even seem like it is a beer type, just a resealable can. Consider getting rid of it
-
-## n(993) Oskar Blues Can'D AID Foundation is in fact water... just canned like beer for hurricane recovery
 
 ```
 
 ```{r}
+# Part of question 3 - Imputing some researched values for ABV and IBU - Intializing  ---- 
 # Filled in researched Data and Intialize Data sets
 
 ## 75 Brewery Vivant Fat Paczki - 7.5%
@@ -89,7 +62,7 @@ BeerBrewery$IBU[186] = 65
 ## 193 Sun King Brewing Company Bourbon Barrel Cowbell 6% abv - 23 IBU
 BeerBrewery$ABV[193] = 0.060
 BeerBrewery$IBU[193] = 23
-## 227 Cedar Creek Brewery Special Release commented above
+## 227 Cedar Creek Brewery Special Release - Actually refers to two separate beers
 ## 252 James Page Brewing Company Bastian 6.2% no IBU
 BeerBrewery$ABV[252] = 0.062
 ## 440 Crazy Mountain Brewing Company Winter Wondergrass Festival Ale 4.9% no IBU
@@ -133,7 +106,7 @@ BeerBrewery$ABV[791] = 0.055
 BeerBrewery$ABV[994] = 0.07
 ## 996 Oskar Blues Brewery Birth IPA couldnt find
 ## 1158 Capital Brewery Supper Club Lager 5.2% 
-BeerBrewery$ABV[1158] = 0.075
+BeerBrewery$ABV[1158] = 0.052
 ## 1298 Rochester Mills Brewing Company Cal and Co Black Cherry Porter 7%
 BeerBrewery$ABV[1298] = 0.07
 ## 1424 Ska Brewing Company Autumnal Mole' Stout 5.8%
@@ -171,7 +144,7 @@ BeerBrewery$ABV[2242] = 0.055
 ## 2296 Spilker Ales Hopluia (2004) 5.2
 BeerBrewery$ABV[2296] = 0.052
 ## 2323 Scotty K NA is a non-alcoholic beer that has no IBU.
-BeerBrewery$IBU[2323] = 0.0
+BeerBrewery$IBU[2323] = 1
 ## 2345 Buckbean Brewing Company Roler Bock 7.2
 BeerBrewery$ABV[2345] = 0.072
 ## 2351 Dolores River Brewery Dolores River Hefeweizen No Info
@@ -201,33 +174,22 @@ BeerBrewery$IBUFac = as.factor(BeerBrewery$IBU)
 BeerBrewery$IBUFac = addNA(BeerBrewery$IBUFac)
 #levels(BeerBrewery$IBUFac)
 
-# Creates ABV Factor based on summary of the column: Weak - Abv(0<0.056), Normal - Abv(0.056<= 0.067), Strong - Abv(>0.067)
+# Creates ABV Factor based on popular perception of ABV strength: Weak - Abv(0<0.04), Normal - Abv(0.04<= 0.07), Strong - Abv(>0.07)
 ABVFac = cut(BeerBrewery$ABV, breaks = c(0,0.04,0.07,0.15), labels = c("Weak ( < 0.04)", "Normal (0.04 - 0.07)", "Strong ( >7)"))
 BeerBrewery = cbind(BeerBrewery,ABVFac)
 
 # Creates a Data set that mirrors the original but with NA's deleted
 BeerBreweryNA.delete = BeerBrewery %>% filter(IBU != "NA")
-BeerBreweryNA.predict = BeerBrewery %>% filter(is.na(IBU))
-```
-
-```{r}
-# There are over 1,000 missing IBU observations - not sure how to deal with this many missing values. Likely going to have to automate something - Surely there is a beer api?
-# Apparently lots of methods
-## Have NA be a level
-## use KNN or NB to impute from predicted values
-```
-
-
-```{r}
-# This is analysis question 1 ----
-# Show number of breweries by state - needs some color 
-Breweries %>% group_by(State) %>% count_() %>% ggplot(aes(x = reorder(State, -n), y = n )) +
-  geom_col() + theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Number of Breweries') + 
-  ggtitle("Number of Breweries by State") + geom_text(aes(label = n), vjust = -0.5, size = 3)
 ```
 
 ```{r, warning=FALSE}
-# Perfect! This looks amazing!
+# This is analysis question 1 - Breweries by State ----
+# Show number of breweries by state
+Breweries %>% group_by(State) %>% count_() %>% ggplot(aes(x = reorder(State, -n), y = n )) +
+  geom_col() + theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Number of Breweries') + 
+  ggtitle("Number of Breweries by State") + geom_text(aes(label = n), vjust = -0.5, size = 3)
+
+# Geographical Map
 mapBreweries = Breweries %>% group_by(State) %>% count_()
 mapBreweries$State = as.character(mapBreweries$State)
 mapBreweries$State = sub(" ", "", mapBreweries$State)
@@ -239,6 +201,22 @@ plot_usmap(data = map2, values = "n", color = "red", labels = TRUE, label_color 
 ```
 
 ```{r}
+# This is analysis question 2 - The first and last 6 observations ----
+head(BeerBrewery, 6)
+tail(BeerBrewery, 6)
+```
+
+```{r}
+# Part of Question 3 - Looking at whats missing ----
+gg_miss_var(BeerBrewery)
+
+na_count <- sapply(BeerBrewery, function(y) sum(length(which(is.na(y)))))
+na_count <- data.frame(na_count)
+na_count
+```
+
+```{r}
+# Not part of a specific question - Shows IBU with and without its NAs ----
 # Shows IBU with and Without the NA - Full Set
 BeerBrewery %>% group_by(IBUFac) %>% filter(IBU != "NA") %>% summarise(countibu = n()) %>% ggplot(aes(x = IBUFac, y = countibu)) +
   geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") + theme(axis.text.x = element_text(angle = 90, vjust = -0.05))
@@ -246,9 +224,7 @@ BeerBrewery %>% group_by(IBUFac) %>% filter(IBU != "NA") %>% summarise(countibu 
 BeerBrewery %>% group_by(IBUFac) %>% summarise(countibu = n()) %>% ggplot(aes(x = IBUFac, y = countibu)) +
   geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") + theme(axis.text.x = element_text(angle = 90, vjust = -0.05))
 
-# The next set shows the same thing but with only the top 15 -  
-## I think this may get the point across better. I think we should lead with the full set of heres everything just to get a feel for how big this stuff really
-## is - then switch to the top x - that way side by side comparisons are easier and we have reference beers/styles/IBUs/ to talk about.
+# Same as above but only top 15
 BeerBrewery %>% group_by(IBUFac) %>% filter(IBU != "NA") %>% summarise(countibu = n()) %>%
   arrange(-countibu) %>% slice(1:15)  %>% ggplot(aes(x = reorder(IBUFac, countibu), y = countibu)) +
   geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") + coord_flip()
@@ -260,6 +236,7 @@ BeerBrewery %>% group_by(IBUFac) %>% summarise(countibu = n()) %>% arrange(-coun
 ```
 
 ```{r}
+# not part of a specfic question - Display top 15 beer styles ----
 # Display top 15 Styles by count
 BeerBrewery %>% group_by(Style) %>% summarise(CountStyle = n()) %>% arrange(-CountStyle) %>% slice(1:15) %>%
   ggplot(aes(x = reorder(Style, CountStyle), y = CountStyle)) + geom_col() +
@@ -268,7 +245,7 @@ BeerBrewery %>% group_by(Style) %>% summarise(CountStyle = n()) %>% arrange(-Cou
 ```
 
 ```{r}
-# Looking at ABV by factor - do these breaks work? need adjusting? Most people prefer normal and more prefer strong to weak.
+# Not part of a specific question - Looking at ABV by factor ---- 
 BeerBrewery %>% group_by(ABVFac) %>% summarise(CountABVFac = n()) %>% na.omit() %>%
   ggplot(aes(x = ABVFac, y = CountABVFac)) + geom_col(width = 0.75) + geom_text(aes(label = CountABVFac), vjust = -0.5, size = 4) + 
   xlab("ABV Category") + ylab("Frequency") + ggtitle("Number of Beers by ABV Factor")
@@ -276,12 +253,12 @@ BeerBrewery %>% group_by(ABVFac) %>% summarise(CountABVFac = n()) %>% na.omit() 
 
 Need to look at ABV Distribution - looks approximately normal with a small right skew - QQplot indicates we might be able to log variable
 ```{r}
-# Analysis of project number 6 ----
+# Analysis of number 6 - Summary Stats and distribution of ABV ----
 # If we take off the meaningless y axis stuff from the boxplot it un-centers it from the histogram - better to have it on center? Currently on
 g1 = BeerBrewery %>% ggplot(aes(x = ABV)) + geom_histogram(binwidth = 0.0025) + xlim(0,0.125) +
   theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 
-g2 = BeerBrewery %>% ggplot(aes(x = ABV)) + geom_boxplot() + xlim(0,0.125) + theme(axis.ticks.y = element_blank())#, axis.text.y = element_blank())
+g2 = BeerBrewery %>% ggplot(aes(x = ABV)) + geom_boxplot() + xlim(0,0.125) + theme(axis.ticks.y = element_blank())
 
 g3 = BeerBrewery %>% ggplot(aes(sample = ABV)) + stat_qq_line() + stat_qq() + ylim(0,0.125) + xlab("Quantile") + ylab("ABV")
 
@@ -291,26 +268,28 @@ plot_grid(g1,g3,g2,g4, ncol = 2)
 ```
 
 ```{r}
-# I'll have to check this out later - not working at the moment
-g1 = BeerBreweryNA.delete %>% ggplot(aes(x = IBU)) + geom_histogram(binwidth = 2) + xlim(0,150) +
+# Not part of a specific question - IBU Distribution Characteristics - Summary Stats and distribution of IBU before impute ----
+g1 = BeerBrewery %>% na.omit() %>% ggplot(aes(x = IBU)) + geom_histogram(binwidth = 2) + xlim(0,150) +
   theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 
-g2 = BeerBreweryNA.delete %>% ggplot(aes(x = IBU)) + geom_boxplot() + xlim(0,150) + theme(axis.ticks.y = element_blank())#, axis.text.y = element_blank())
+g2 = BeerBrewery %>% na.omit()  %>% ggplot(aes(x = IBU)) + geom_boxplot() + xlim(0,150) + 
+  theme(axis.ticks.y = element_blank())
 
-g3 = BeerBreweryNA.delete %>% ggplot(aes(sample = IBU)) + stat_qq_line() + stat_qq() + ylim(0,150) + xlab("Quantile") + ylab("IBU")
+g3 = BeerBrewery %>% na.omit() %>% ggplot(aes(sample = IBU)) + stat_qq_line() + stat_qq() + ylim(0,150) + xlab("Quantile") + ylab("IBU")
 
 g4 = ggdraw() + draw_label("Distribution Characteristics \nof IBU", color = "Gray2", size = 20)
 
 plot_grid(g1,g3,g2,g4, ncol = 2)
 ```
-
-```{r}
-BeerBreweryNA.delete %>% ggplot(aes(x = ABV, y = IBU)) + geom_point() + geom_smooth(formula = y~x) + xlim(0,0.15) + geom_jitter() + 
-  ggtitle("Scatterplot of IBU v ABV")
+The scatterplot below shows the we will likely have especially bad predictions when ABV > 0.1 or less than ~ 0.025
+```{r, warning=FALSE}
+# Part of Number 7 - Scatterplot of IBU v ABV ----
+BeerBrewery %>% na.omit() %>% ggplot(aes(x = ABV, y = IBU, color = ABVFac)) + geom_point() + geom_smooth(formula = y~x) + xlim(0,0.15) + geom_jitter() + 
+  ggtitle("Scatterplot of IBU v ABV") + labs(color = "ABV by Strength")
 ```
-
+# Start of Linear models. These are to look at imputing by using LM predictions
 ```{r}
-# Current seed set to 4.
+# Part of question 3 - Set Seed and Train/test sets ----  
 set.seed(4)
 splitperc = 0.70
 index<- sample(1:dim(BeerBreweryNA.delete)[1],round(splitperc*dim(BeerBreweryNA.delete)[1]),replace=F)
@@ -318,9 +297,8 @@ train<- BeerBreweryNA.delete[index,]
 test<- BeerBreweryNA.delete[-index,]
 ```
 
-# Linear Models 1-3: Looking at how well a linear model will predict/impute the data. 
 ```{r}
-# Very Simple
+# Simple model - linear model 1 and fit stats (q3) -  IBU ~ ABV ----
 linearmodel1 <- lm(IBU ~ ABV, data = train)
 summary(linearmodel1)
 ols_plot_resid_fit(linearmodel1)
@@ -330,20 +308,9 @@ ols_plot_resid_hist(linearmodel1)
 ols_plot_cooksd_bar(linearmodel1)
 ```
 
+Whats with point 729???
 ```{r}
-# Very Simple with a log
-linearmodel1.log <- lm(log(IBU) ~ ABV, data = train)
-summary(linearmodel1.log)
-ols_plot_resid_fit(linearmodel1.log)
-ols_plot_resid_lev(linearmodel1.log)
-ols_plot_resid_qq(linearmodel1.log)
-ols_plot_resid_hist(linearmodel1.log)
-ols_plot_cooksd_bar(linearmodel1.log)
-
-```
-
-```{r}
-# Pretty Complex - came up with this playing around. there is some curvature present in the Resdiual Normal QQ - however 
+# Complex Model - Linear model 2 and fit stats(q3) - IBU ~ log(ABV)^3 ----
 linearmodel2 <- lm(IBU ~ poly(log(ABV),3), data = train)
 summary(linearmodel2)
 ols_plot_resid_fit(linearmodel2)
@@ -353,37 +320,22 @@ ols_plot_resid_hist(linearmodel2)
 ols_plot_cooksd_bar(linearmodel2)
 ```
 
-```{r}
-# Medium Complexity
-linearmodel3 <- lm(log(IBU) ~ poly(log(ABV,3)), data = train)
-summary(linearmodel3)
-ols_plot_resid_fit(linearmodel3)
-ols_plot_resid_lev(linearmodel3)
-ols_plot_resid_qq(linearmodel3)
-ols_plot_resid_hist(linearmodel3)
-ols_plot_cooksd_bar(linearmodel3)
-```
+There is some serious correlation in the above residual plots which is a bit troubling. This would suggest we need a correction of some sort or more predictors (of which we have none). Logging the response does not help. Model 2 gets rid of a lot of the correlation - but adds a non-constant variance violation, which again is not alleviated by log transforms.
 
-There is some serious correlation in the above residual plots which is a bit troubling. This would suggest we need a correction of some sort or more predictors (of which we have none). Logging the response does not help (model 1 v logmodel1 and model 2 v model 3). Model 2 gets rid of a lot of the correlation - but adds a non-constant variance violation, which again is not alleviated by log transforms.
-
-All this leads me to think we may want a non-parametric model. Thus the Naive Bayes (Though the conditional independence may be violated). I think this will have the advantage over KNN for 2 reasons: 
-
-1) We will want to try non-numeric variable types. 
-2) KNN works best with scaled numeric variables - the scaling, as well as the KNN, creates issues with interpretation - this doesn't completly exclude it but maybe works best as a last resort.
-
-
+All this leads me to think we may want a non-parametric model. So KNN or NB
 
 ```{r}
+# Linear Model Benchmarking (q3) ----
 iterations = 500
 splitperc = 0.70
 # column building
 LModelRMSE1 = c()
 LModelRMSE2 = c()
-LModelRMSE3 = c()
+
 
 for(i in 1:iterations)
 {
-  set.seed(i)
+  #set.seed(i)
   index<- sample(1:dim(BeerBreweryNA.delete)[1],round(splitperc*dim(BeerBreweryNA.delete)[1]),replace=F)
   train<- BeerBreweryNA.delete[index,]
   test<- BeerBreweryNA.delete[-index,]
@@ -398,22 +350,14 @@ for(i in 1:iterations)
   d2 = data.frame(R2 = R2(predictions2,test$IBU), RMSE = RMSE(predictions2,test$IBU), MAE = MAE(predictions2, test$IBU))
   LModelRMSE2 = c(LModelRMSE2, d2$RMSE)
   
-  predictions3 <- linearmodel3 %>% predict(test)
-  
-  d3 = data.frame(R2 = R2(predictions3, test$IBU), RMSE = RMSE(predictions3, test$IBU), MAE = MAE(predictions3, test$IBU))
-  
-  LModelRMSE3 = c(LModelRMSE3, d3$RMSE)
-  
-  
 }  
   
-Linear.Model.Average.RMSE = cbind(LModelRMSE1, LModelRMSE2, LModelRMSE3)
+Linear.Model.Average.RMSE = cbind(LModelRMSE1, LModelRMSE2)
 linearRmsedf = as.data.frame(Linear.Model.Average.RMSE)
 Means = colMeans(Linear.Model.Average.RMSE)
 SDs = round(colSds(Linear.Model.Average.RMSE), 5)
 range1 = max(linearRmsedf$LModelRMSE1) - min(linearRmsedf$LModelRMSE1)
 range2 = max(linearRmsedf$LModelRMSE2) - min(linearRmsedf$LModelRMSE2)
-range3 = max(linearRmsedf$LModelRMSE3) - min(linearRmsedf$LModelRMSE3)
 linearRmsedf = melt(linearRmsedf)
   
   
@@ -424,7 +368,6 @@ SDs
 print("ranges - measure of variance between train/test shuffles")
 print(paste("Model 1 Range" , round(range1, 5)))
 print(paste("Model 2 Range" , round(range2, 5)))
-print(paste("Model 3 Range" , round(range3, 5)))
 cat("Summary: 
     ")
 summary(Linear.Model.Average.RMSE)
@@ -432,10 +375,9 @@ summary(Linear.Model.Average.RMSE)
 # Scatter
 Pred1 <- data.frame(Value = predictions1, Model = "Linear Model 1")
 Pred2 <- data.frame(Value = predictions2, Model = "Linear Model 2")
-Pred3 <- data.frame(Value = predictions3, Model = "Linear Model 3")
 PredActual <- data.frame(ActualValue = test$IBU)
-PredAll <- rbind(Pred1, Pred2, Pred3)
-PredActual <- rbind(PredActual,PredActual, PredActual)
+PredAll <- rbind(Pred1, Pred2)
+PredActual <- rbind(PredActual,PredActual)
 PredAll <- cbind(PredAll, PredActual)
 
 #Are the fits shown here a bit misleading compared to their equations?
@@ -457,23 +399,13 @@ linearRmsedf %>%  ggplot(aes(x = value)) + geom_histogram(aes(fill = variable)) 
   ggtitle("Mean RMSE Distribution by Model") + xlab("Mean RMSE") + 
   theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())
 
-# Dont forget multiple comparison adjustment
-
+# t-test or one way ANOVA to see if our errors are significantly different
 t.test(LModelRMSE1,LModelRMSE2, var.equal = FALSE)
-t.test(LModelRMSE1,LModelRMSE3, var.equal = FALSE)
-t.test(LModelRMSE2,LModelRMSE3, var.equal = FALSE)
-```
-# NaiveBayes Prediction - This is apparently more difficult than anticipated, messed with this for awhile. - Checking KNN
-```{r}
-# This is currently broke I think
-# predict(NBmodel, newdata, type = raw) / type = raw for probabilities
-# naiveBayes(predictors, response, laplace)
-NB.Model.1 <- naiveBayes(train[,4], train$IBUFac)
-predict(NB.Model.1, data.frame(ABV = 0.094), type = "raw")
 
 ```
 
 ```{r}
+# So it turns out that KNN imputing is done in a waaay different manner - may not need this piece at all ----
 # This is up and running. Need to find optimal k and add scaled variables for better analysis. Currently predicting right with LM
 iterations = 50
 RMSE.KNN1.AGG = c()
@@ -501,20 +433,43 @@ mean(RMSE.KNN1.AGG$RMSE.KNN1.AGG)
 ```
 
 ```{r}
+# Linear Model Imputation Method (q3) ----
 # Uses linear model 1 to predict IBU from ABV -  need to break the predictions out of the KNN next
 # This predicts right into BeerBrewery we may need to offload these into a second data set depending on analysis needs.
 BeerBreweryPredicted <- BeerBrewery %>% mutate(Prediction = predict(linearmodel2, .)) %>% mutate(IBU = ifelse(is.na(IBU), Prediction, IBU))
 
 ```
 
+```{r}
+# KNN Imputation Method (q3) ----
+# this method cant have both columns of the variables be NA - so this drops the 17 NA ABV values total 2393 instead 2410....
+# This is pretty cool it imputes the values directly into the columns so we just have to unscale what we need
+BeerBrewery1 = BeerBrewery %>% filter((!is.na(BeerBrewery$ABV)))
+Myimpute <- preProcess(BeerBrewery1[,4:5], method = "knnImpute", k = 20)
+Myimpute <- predict(Myimpute, BeerBrewery1)
+
+# Unscales the IBU So we can analyze it
+Myimpute = Myimpute %>% mutate(IBUPred = (IBU*sd(BeerBrewery1$IBU, na.rm = TRUE) + mean(BeerBrewery1$IBU, na.rm = TRUE)))
+```
 
 ```{r, warning=FALSE}
+# Comparing Imputed IBUs with observed data (q3) ----
+p1 = BeerBreweryPredicted %>% ggplot(aes(x = IBU)) + geom_histogram(binwidth = 3)
+p2 = Myimpute %>% ggplot(aes(x = IBUPred)) + geom_histogram(binwidth = 3)
+p3 = BeerBreweryNA.delete %>% ggplot(aes(x = IBU)) + geom_histogram(binwidth = 3)
+plot_grid(p1,p2,p3, labels = c("LM","KNN", "OBS"), ncol = 3)
+```
+
+
+```{r, warning=FALSE}
+# Answer Project question #4 Median ABV by State ----
+# Top 15
 BeerBreweryPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV)) %>% arrange(-StateMedian) %>% slice(1:15) %>%
   ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
   ggtitle("Median ABV By State (Highest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
 
-# Perfect! This looks amazing!
+# Map Graphic
 mapBreweries = BeerBreweryPredicted %>% na.omit() %>% group_by(State) %>% summarise(StateMedian = median(ABV))
 mapBreweries$State = as.character(mapBreweries$State)
 mapBreweries$State = sub(" ", "", mapBreweries$State)
@@ -523,9 +478,7 @@ plot_usmap(data = map2, values = "StateMedian", color = "red", labels = TRUE, la
   scale_fill_continuous(name = "Brewery count", label = scales::comma) + 
   labs(title = "USA MAP", subtitle="Median ABV by State") +
   theme(legend.position = "right")
-```
 
-```{r}
 BeerBreweryPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV)) %>% arrange(StateMedian) %>% slice(1:15) %>%
   ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
@@ -533,12 +486,13 @@ BeerBreweryPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian
 ```
 
 ```{r, warning=FALSE}
+# Answer Project question #4 Median IBU Content by State ----
 BeerBreweryPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(IBU)) %>% arrange(-StateMedian) %>% slice(1:15) %>%
   ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
   ggtitle("Median IBU By State (Highest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
 
-# Perfect! This looks amazing!
+
 mapBreweries = BeerBreweryPredicted %>% na.omit() %>% group_by(State) %>% summarise(StateMedian = median(IBU))
 mapBreweries$State = as.character(mapBreweries$State)
 mapBreweries$State = sub(" ", "", mapBreweries$State)
@@ -549,15 +503,14 @@ plot_usmap(data = map2, values = "StateMedian", color = "red", labels = TRUE, la
   theme(legend.position = "right")
 ```
 
-
+Part 8 still needs the classifier - this should be a near copy of asynch material
 ```{r}
+# Part of question 8 - Creating the IPA/Ale data set from the linear predicted data set ----
 BeerBreweryPredicted = BeerBreweryPredicted %>% mutate(StyleChar = as.character(Style))
 IPA = BeerBreweryPredicted %>% filter(str_detect(StyleChar,"IPA"))
 Ale = BeerBreweryPredicted %>% filter(str_detect(StyleChar,"Ale")) %>% filter(!str_detect(StyleChar,"India Pale Ale"))
 AleIPA = Ale %>% filter(str_detect(StyleChar,"IPA"))
-```
 
-```{r}
 IPA = IPA %>% mutate(IPAorAle = "IPA") 
 Ale = Ale %>% mutate(IPAorAle = "Ale")
 
@@ -565,12 +518,14 @@ Bud = rbind(IPA,Ale)
 ```
 
 ```{r}
-sprintf("The Max ABV is %s, from the beer %s,in State %s",
+# project number 5 ----
+# Max ABV and IBU drawn from Linear predicted data
+sprintf("The Max ABV is %s, from the beer %s,in%s",
         BeerBreweryPredicted$ABV[which.max(BeerBreweryPredicted$ABV)],
         BeerBreweryPredicted$Beer[which.max(BeerBreweryPredicted$ABV)],
         BeerBreweryPredicted$State[which.max(BeerBreweryPredicted$ABV)])
 
-sprintf("The Max IBU is %s, from the beer %s,in State %s",
+sprintf("The Max IBU is %s, from the beer %s,in%s",
         BeerBreweryPredicted$IBU[which.max(BeerBreweryPredicted$IBU)],
         BeerBreweryPredicted$Beer[which.max(BeerBreweryPredicted$IBU)],
         BeerBreweryPredicted$State[which.max(BeerBreweryPredicted$IBU)])
