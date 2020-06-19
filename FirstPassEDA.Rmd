@@ -408,34 +408,6 @@ t.test(LModelRMSE1,LModelRMSE2, var.equal = FALSE)
 ```
 
 ```{r}
-# So it turns out that KNN imputing is done in a waaay different manner - may not need this piece at all ----
-# This is up and running. Need to find optimal k and add scaled variables for better analysis. Currently predicting right with LM
-iterations = 50
-RMSE.KNN1.AGG = c()
-
-for(i in 1:iterations)
-{
-  #set.seed(i)
-  index<- sample(1:dim(BeerBreweryNA.delete)[1],round(splitperc*dim(BeerBreweryNA.delete)[1]),replace=F)
-  train<- BeerBreweryNA.delete[index,]
-  test<- BeerBreweryNA.delete[-index,]
-  KNN.Model1 <- knn.reg(as.data.frame(train[,4]), as.data.frame(test[,4]), train$IBU, k=5)
-  KNN.Predictions1 = as.data.frame(KNN.Model1$pred)
-  names(KNN.Predictions1)[1] <- "Predictions"
-  
-  PredvActual <- data.frame(Predictions = c(KNN.Predictions1), Actual = c(test$IBU))
-  PredvActual = PredvActual %>% mutate(ResidSquError1 = (Predictions - Actual)^2)
-
-  RMSE.KNN1 = sqrt(mean(PredvActual$ResidSquError1))
-  #print(RMSE.KNN1)
-  RMSE.KNN1.AGG = c(RMSE.KNN1.AGG, RMSE.KNN1)
-
-}
-RMSE.KNN1.AGG = as.data.frame(RMSE.KNN1.AGG)
-mean(RMSE.KNN1.AGG$RMSE.KNN1.AGG)
-```
-
-```{r}
 # Linear Model Imputation Method (q3) ----
 # Uses linear model 1 to predict IBU from ABV, Also removes the 17 ABV NAs that are left
 # This predicts right into BeerBrewery we may need to offload these into a second data set depending on analysis needs.
@@ -573,7 +545,7 @@ index<- sample(1:dim(Bud)[1],round(splitperc*dim(Bud)[1]),replace=F)
   train<- Bud[index,]
   test<- Bud[-index,]
 
-classifications = knn(train[,4:5],test[,4:5],train$IPAorAle, prob = TRUE, k = 3)
+classifications = knn(train[,4:5],test[,4:5],train$IPAorAle, prob = TRUE, k = 50)
 table(classifications,test$IPAorAle)
 confusionMatrix(table(classifications,test$IPAorAle))
 ```
