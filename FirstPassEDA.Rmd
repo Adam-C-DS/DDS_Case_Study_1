@@ -180,6 +180,9 @@ BeerBrewery = cbind(BeerBrewery,ABVFac)
 
 # Creates a Data set that mirrors the original but with NA's deleted
 BeerBreweryNA.delete = BeerBrewery %>% filter(IBU != "NA")
+
+# removes Beers df, it is not used again after this point
+rm(Beers)
 ```
 
 ```{r, warning=FALSE}
@@ -244,15 +247,15 @@ BeerBrewery %>% group_by(Style) %>% summarise(CountStyle = n()) %>% arrange(-Cou
   ggtitle("15 Most Popular Beer Styles by Style Frequency")
 ```
 
-```{r}
+```{r, warning=FALSE}
 # Not part of a specific question - Looking at ABV by factor ---- 
 BeerBrewery %>% group_by(ABVFac) %>% summarise(CountABVFac = n()) %>% na.omit() %>%
-  ggplot(aes(x = ABVFac, y = CountABVFac)) + geom_col(width = 0.75) + geom_text(aes(label = CountABVFac), vjust = -0.5, size = 4) + 
+  ggplot(aes(x = ABVFac, y = CountABVFac)) + geom_col(width = 0.75) + geom_text(aes(label = CountABVFac), vjust = -0.3, size = 4) + 
   xlab("ABV Category") + ylab("Frequency") + ggtitle("Number of Beers by ABV Factor")
 ```
 
 Need to look at ABV Distribution - looks approximately normal with a small right skew - QQplot indicates we might be able to log variable
-```{r}
+```{r, warning=FALSE}
 # Analysis of number 6 - Summary Stats and distribution of ABV ----
 # If we take off the meaningless y axis stuff from the boxplot it un-centers it from the histogram - better to have it on center? Currently on
 g1 = BeerBrewery %>% ggplot(aes(x = ABV)) + geom_histogram(binwidth = 0.0025) + xlim(0,0.125) +
@@ -268,7 +271,7 @@ plot_grid(g1,g3,g2,g4, ncol = 2)
 ```
 
 ```{r}
-# Not part of a specific question - IBU Distribution Characteristics - Summary Stats and distribution of IBU before impute ----
+# IBU Distribution Characteristics - Summary Stats and distribution of IBU before impute (q3) ----
 g1 = BeerBrewery %>% na.omit() %>% ggplot(aes(x = IBU)) + geom_histogram(binwidth = 2) + xlim(0,150) +
   theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 
@@ -277,7 +280,7 @@ g2 = BeerBrewery %>% na.omit()  %>% ggplot(aes(x = IBU)) + geom_boxplot() + xlim
 
 g3 = BeerBrewery %>% na.omit() %>% ggplot(aes(sample = IBU)) + stat_qq_line() + stat_qq() + ylim(0,150) + xlab("Quantile") + ylab("IBU")
 
-g4 = ggdraw() + draw_label("Distribution Characteristics \nof IBU", color = "Gray2", size = 20)
+g4 = ggdraw() + draw_label("Distribution Characteristics \nof IBU\n (Before Impute)", color = "Gray2", size = 20)
 
 plot_grid(g1,g3,g2,g4, ncol = 2)
 ```
@@ -380,9 +383,9 @@ PredAll <- rbind(Pred1, Pred2)
 PredActual <- rbind(PredActual,PredActual)
 PredAll <- cbind(PredAll, PredActual)
 
-#Are the fits shown here a bit misleading compared to their equations?
-PredAll %>% ggplot(aes(x = Value, y = ActualValue, fill = Model)) + geom_point(aes(color = Model)) + geom_smooth(formula = y~x)+
-facet_wrap(facets = PredAll$Model) + ggtitle("Scatter Plot of Models") + xlab("Predicted") + ylab("Observed")
+#Are the fits shown here a bit misleading compared to their equations? I think yes this provides little value
+#PredAll %>% ggplot(aes(x = Value, y = ActualValue, fill = Model)) + geom_point(aes(color = Model)) + geom_smooth(formula = y~x)+
+#facet_wrap(facets = PredAll$Model) + ggtitle("Scatter Plot of Models") + xlab("Predicted") + ylab("Observed")
 
 # Column
 linearRmsedf %>% group_by(variable) %>% summarise(mean = (mean(value))) %>% 
@@ -434,10 +437,26 @@ mean(RMSE.KNN1.AGG$RMSE.KNN1.AGG)
 
 ```{r}
 # Linear Model Imputation Method (q3) ----
-# Uses linear model 1 to predict IBU from ABV -  need to break the predictions out of the KNN next
+# Uses linear model 1 to predict IBU from ABV, Also removes the 17 ABV NAs that are left
 # This predicts right into BeerBrewery we may need to offload these into a second data set depending on analysis needs.
-BeerBreweryPredicted <- BeerBrewery %>% mutate(Prediction = predict(linearmodel2, .)) %>% mutate(IBU = ifelse(is.na(IBU), Prediction, IBU))
+BeerBreweryLMPredicted <- BeerBrewery %>% filter((!is.na(BeerBrewery$ABV))) %>% 
+  mutate(Prediction = predict(linearmodel2, .)) %>% mutate(IBU = ifelse(is.na(IBU), Prediction, IBU))
 
+```
+
+```{r, warning = FALSE}
+# IBU Distribution Characteristics - Summary Stats and distribution of IBU After LM impute (q3) ----
+g1 = BeerBrewery %>% na.omit() %>% ggplot(aes(x = IBU)) + geom_histogram(binwidth = 2) + xlim(0,150) +
+  theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+
+g2 = BeerBrewery %>% na.omit()  %>% ggplot(aes(x = IBU)) + geom_boxplot() + xlim(0,150) + 
+  theme(axis.ticks.y = element_blank())
+
+g3 = BeerBrewery %>% na.omit() %>% ggplot(aes(sample = IBU)) + stat_qq_line() + stat_qq() + ylim(0,150) + xlab("Quantile") + ylab("IBU")
+
+g4 = ggdraw() + draw_label("Distribution Characteristics \nof LM Imputed IBU", color = "Gray2", size = 20)
+
+plot_grid(g1,g3,g2,g4, ncol = 2)
 ```
 
 ```{r}
@@ -445,32 +464,64 @@ BeerBreweryPredicted <- BeerBrewery %>% mutate(Prediction = predict(linearmodel2
 # this method cant have both columns of the variables be NA - so this drops the 17 NA ABV values total 2393 instead 2410....
 # This is pretty cool it imputes the values directly into the columns so we just have to unscale what we need
 BeerBrewery1 = BeerBrewery %>% filter((!is.na(BeerBrewery$ABV)))
-Myimpute <- preProcess(BeerBrewery1[,4:5], method = "knnImpute", k = 20)
-Myimpute <- predict(Myimpute, BeerBrewery1)
+BeerBreweryKNNPredicted <- preProcess(BeerBrewery1[,4:5], method = "knnImpute", k = 20)
+BeerBreweryKNNPredicted <- predict(BeerBreweryKNNPredicted, BeerBrewery1)
 
 # Unscales the IBU So we can analyze it
-Myimpute = Myimpute %>% mutate(IBUPred = (IBU*sd(BeerBrewery1$IBU, na.rm = TRUE) + mean(BeerBrewery1$IBU, na.rm = TRUE)))
+BeerBreweryKNNPredicted = BeerBreweryKNNPredicted %>% mutate(IBUPred = (IBU*sd(BeerBrewery1$IBU, na.rm = TRUE) + mean(BeerBrewery1$IBU, na.rm = TRUE)))
 ```
 
 ```{r, warning=FALSE}
-# Comparing Imputed IBUs with observed data (q3) ----
-p1 = BeerBreweryPredicted %>% ggplot(aes(x = IBU)) + geom_histogram(binwidth = 3)
-p2 = Myimpute %>% ggplot(aes(x = IBUPred)) + geom_histogram(binwidth = 3)
-p3 = BeerBreweryNA.delete %>% ggplot(aes(x = IBU)) + geom_histogram(binwidth = 3)
-plot_grid(p1,p2,p3, labels = c("LM","KNN", "OBS"), ncol = 3)
+# IBU Distribution Characteristics - Summary Stats and distribution of IBU After KNN impute (q3) ----
+g1 = BeerBrewery %>% na.omit() %>% ggplot(aes(x = IBU)) + geom_histogram(binwidth = 2) + xlim(0,150) +
+  theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+
+g2 = BeerBrewery %>% na.omit()  %>% ggplot(aes(x = IBU)) + geom_boxplot() + xlim(0,150) + 
+  theme(axis.ticks.y = element_blank())
+
+g3 = BeerBrewery %>% na.omit() %>% ggplot(aes(sample = IBU)) + stat_qq_line() + stat_qq() + ylim(0,150) + xlab("Quantile") + ylab("IBU")
+
+g4 = ggdraw() + draw_label("Distribution Characteristics \nof KNN Imputed IBU", color = "Gray2", size = 20)
+
+plot_grid(g1,g3,g2,g4, ncol = 2)
 ```
 
+```{r, warning=FALSE}
+# Comparing distributions of Imputed IBUs with observed data (q3) ----
+g1 = BeerBreweryLMPredicted %>% ggplot(aes(x = IBU)) + geom_histogram(binwidth = 3)
+g2 = BeerBreweryKNNPredicted %>% ggplot(aes(x = IBUPred)) + geom_histogram(binwidth = 3)
+g3 = BeerBreweryNA.delete %>% ggplot(aes(x = IBU)) + geom_histogram(binwidth = 3)
+
+f1 = BeerBreweryLMPredicted %>% ggplot(aes(x = IBU)) + geom_boxplot()
+f2 = BeerBreweryKNNPredicted %>% ggplot(aes(x = IBUPred)) + geom_boxplot()
+f3 = BeerBreweryNA.delete %>% ggplot(aes(x = IBU)) + geom_boxplot()
+
+plot_grid(g1, g2, g3,f1,f2,f3, labels = c("LM","KNN", "OBS"), ncol = 3, nrow = 2)
+```
+
+```{r}
+# part of question 3 analysis LM Predictions v KNN Predictions ----
+# Looking at how different the predictions are - not very different so could use either one. 
+LMPred = BeerBreweryLMPredicted %>% dplyr::select(Prediction)
+KNNPred = BeerBreweryKNNPredicted %>% dplyr::select(IBUPred)
+difference = cbind(LMPred, KNNPred)
+difference = difference %>% mutate(Pred.Diff = (Prediction - IBUPred))
+t.test(difference$Prediction, difference$IBUPred, var.equal = FALSE)
+
+difference %>% ggplot(aes(x = IBUPred, y = Prediction)) + geom_point() + geom_smooth() + geom_jitter() + 
+  xlab("KNN Predicted IBU") + ylab("LM Predicted IBU") + ggtitle("LM v KNN Predicted IBU")
+```
 
 ```{r, warning=FALSE}
 # Answer Project question #4 Median ABV by State ----
 # Top 15
-BeerBreweryPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV)) %>% arrange(-StateMedian) %>% slice(1:15) %>%
+BeerBreweryLMPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV)) %>% arrange(-StateMedian) %>% slice(1:15) %>%
   ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
   ggtitle("Median ABV By State (Highest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
 
 # Map Graphic
-mapBreweries = BeerBreweryPredicted %>% na.omit() %>% group_by(State) %>% summarise(StateMedian = median(ABV))
+mapBreweries = BeerBreweryLMPredicted %>% na.omit() %>% group_by(State) %>% summarise(StateMedian = median(ABV))
 mapBreweries$State = as.character(mapBreweries$State)
 mapBreweries$State = sub(" ", "", mapBreweries$State)
 map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
@@ -479,7 +530,7 @@ plot_usmap(data = map2, values = "StateMedian", color = "red", labels = TRUE, la
   labs(title = "USA MAP", subtitle="Median ABV by State") +
   theme(legend.position = "right")
 
-BeerBreweryPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV)) %>% arrange(StateMedian) %>% slice(1:15) %>%
+BeerBreweryLMPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV)) %>% arrange(StateMedian) %>% slice(1:15) %>%
   ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
   ggtitle("Median ABV By State (Lowest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
@@ -487,13 +538,12 @@ BeerBreweryPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian
 
 ```{r, warning=FALSE}
 # Answer Project question #4 Median IBU Content by State ----
-BeerBreweryPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(IBU)) %>% arrange(-StateMedian) %>% slice(1:15) %>%
+BeerBreweryLMPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = round(median(IBU),3)) %>% arrange(-StateMedian) %>% slice(1:15) %>%
   ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
   ggtitle("Median IBU By State (Highest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
 
-
-mapBreweries = BeerBreweryPredicted %>% na.omit() %>% group_by(State) %>% summarise(StateMedian = median(IBU))
+mapBreweries = BeerBreweryLMPredicted %>% na.omit() %>% group_by(State) %>% summarise(StateMedian = median(IBU))
 mapBreweries$State = as.character(mapBreweries$State)
 mapBreweries$State = sub(" ", "", mapBreweries$State)
 map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
@@ -503,35 +553,45 @@ plot_usmap(data = map2, values = "StateMedian", color = "red", labels = TRUE, la
   theme(legend.position = "right")
 ```
 
-Part 8 still needs the classifier - this should be a near copy of asynch material
+
 ```{r}
-# Part of question 8 - Creating the IPA/Ale data set from the linear predicted data set ----
-BeerBreweryPredicted = BeerBreweryPredicted %>% mutate(StyleChar = as.character(Style))
-IPA = BeerBreweryPredicted %>% filter(str_detect(StyleChar,"IPA"))
-Ale = BeerBreweryPredicted %>% filter(str_detect(StyleChar,"Ale")) %>% filter(!str_detect(StyleChar,"India Pale Ale"))
+# question 8 - Creates new data set and runs classification on a 70/30 CV ----
+BeerBreweryLMPredicted = BeerBreweryLMPredicted %>% mutate(StyleChar = as.character(Style))
+IPA = BeerBreweryLMPredicted %>% filter(str_detect(StyleChar,"IPA"))
+Ale = BeerBreweryLMPredicted %>% filter(str_detect(StyleChar,"Ale")) %>% filter(!str_detect(StyleChar,"India Pale Ale"))
 AleIPA = Ale %>% filter(str_detect(StyleChar,"IPA"))
 
 IPA = IPA %>% mutate(IPAorAle = "IPA") 
 Ale = Ale %>% mutate(IPAorAle = "Ale")
 
 Bud = rbind(IPA,Ale)
+Bud$IPAorAle = as.factor(Bud$IPAorAle)
+
+splitperc = 0.70
+set.seed(4)
+index<- sample(1:dim(Bud)[1],round(splitperc*dim(Bud)[1]),replace=F)
+  train<- Bud[index,]
+  test<- Bud[-index,]
+
+classifications = knn(train[,4:5],test[,4:5],train$IPAorAle, prob = TRUE, k = 3)
+table(classifications,test$IPAorAle)
+confusionMatrix(table(classifications,test$IPAorAle))
 ```
+
 
 ```{r}
 # project number 5 ----
 # Max ABV and IBU drawn from Linear predicted data
 sprintf("The Max ABV is %s, from the beer %s,in%s",
-        BeerBreweryPredicted$ABV[which.max(BeerBreweryPredicted$ABV)],
-        BeerBreweryPredicted$Beer[which.max(BeerBreweryPredicted$ABV)],
-        BeerBreweryPredicted$State[which.max(BeerBreweryPredicted$ABV)])
+        BeerBreweryLMPredicted$ABV[which.max(BeerBreweryLMPredicted$ABV)],
+        BeerBreweryLMPredicted$Beer[which.max(BeerBreweryLMPredicted$ABV)],
+        BeerBreweryLMPredicted$State[which.max(BeerBreweryLMPredicted$ABV)])
 
 sprintf("The Max IBU is %s, from the beer %s,in%s",
-        BeerBreweryPredicted$IBU[which.max(BeerBreweryPredicted$IBU)],
-        BeerBreweryPredicted$Beer[which.max(BeerBreweryPredicted$IBU)],
-        BeerBreweryPredicted$State[which.max(BeerBreweryPredicted$IBU)])
+        BeerBreweryLMPredicted$IBU[which.max(BeerBreweryLMPredicted$IBU)],
+        BeerBreweryLMPredicted$Beer[which.max(BeerBreweryLMPredicted$IBU)],
+        BeerBreweryLMPredicted$State[which.max(BeerBreweryLMPredicted$IBU)])
 ```
-
-
 
 
 
