@@ -239,12 +239,7 @@ BeerBrewery %>% group_by(IBUFac) %>% summarise(countibu = n()) %>% arrange(-coun
 ```
 
 ```{r}
-# not part of a specfic question - Display top 15 beer styles ----
-# Display top 15 Styles by count
-BeerBrewery %>% group_by(Style) %>% summarise(CountStyle = n()) %>% arrange(-CountStyle) %>% slice(1:15) %>%
-  ggplot(aes(x = reorder(Style, CountStyle), y = CountStyle)) + geom_col() +
-  theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) + ylab("Number of Beers") + xlab("Most Popular Styles") + coord_flip() + 
-  ggtitle("15 Most Popular Beer Styles by Style Frequency")
+
 ```
 
 ```{r, warning=FALSE}
@@ -479,18 +474,24 @@ KNNPred = BeerBreweryKNNPredicted %>% dplyr::select(IBUPred)
 difference = cbind(LMPred, KNNPred)
 difference = difference %>% mutate(Pred.Diff = (Prediction - IBUPred))
 t.test(difference$Prediction, difference$IBUPred, var.equal = FALSE)
-
-difference %>% ggplot(aes(x = IBUPred, y = Prediction)) + geom_point() + geom_smooth() + geom_jitter() + 
-  xlab("KNN Predicted IBU") + ylab("LM Predicted IBU") + ggtitle("LM v KNN Predicted IBU")
+difference %>% ggplot(aes(x = IBUPred, y = Prediction)) + geom_point() + geom_smooth(formula = y ~ x) + geom_jitter() + 
+  xlab("KNN Predicted IBU") + ylab("LM Predicted IBU") + 
+  ggtitle(sprintf("LM v KNN Predicted IBU\n (Corr = %s)",round(cor(difference$Prediction, difference$IBUPred),3)))
 ```
 
 ```{r, warning=FALSE}
-# Answer Project question #4 Median ABV by State ----
+# Answer - Project question #4, Median ABV by State ----
 # Top 15
 BeerBreweryLMPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV)) %>% arrange(-StateMedian) %>% slice(1:15) %>%
   ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
   ggtitle("Median ABV By State (Highest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
+
+# Bottom 15
+BeerBreweryLMPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV)) %>% arrange(StateMedian) %>% slice(1:15) %>%
+  ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
+  theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
+  ggtitle("Median ABV By State (Lowest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
 
 # Map Graphic
 mapBreweries = BeerBreweryLMPredicted %>% na.omit() %>% group_by(State) %>% summarise(StateMedian = median(ABV))
@@ -501,11 +502,6 @@ plot_usmap(data = map2, values = "StateMedian", color = "red", labels = TRUE, la
   scale_fill_continuous(name = "Brewery count", label = scales::comma) + 
   labs(title = "USA MAP", subtitle="Median ABV by State") +
   theme(legend.position = "right")
-
-BeerBreweryLMPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV)) %>% arrange(StateMedian) %>% slice(1:15) %>%
-  ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
-  theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
-  ggtitle("Median ABV By State (Lowest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
 ```
 
 ```{r, warning=FALSE}
@@ -520,11 +516,10 @@ mapBreweries$State = as.character(mapBreweries$State)
 mapBreweries$State = sub(" ", "", mapBreweries$State)
 map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
 plot_usmap(data = map2, values = "StateMedian", color = "red", labels = TRUE, label_color = "white") + 
-  scale_fill_continuous(name = "Brewery count", label = scales::comma) + 
+  scale_fill_continuous(name = "State Median IBU", label = scales::comma) + 
   labs(title = "USA MAP", subtitle="Median IBU by State") +
   theme(legend.position = "right")
 ```
-
 
 ```{r}
 # question 8 - Creates new data set and runs classification on a 70/30 CV ----
@@ -538,14 +533,45 @@ Ale = Ale %>% mutate(IPAorAle = "Ale")
 
 Bud = rbind(IPA,Ale)
 Bud$IPAorAle = as.factor(Bud$IPAorAle)
+```
 
-splitperc = 0.70
+
+```{r}
+# Part of question 8 - Find best k value (5 apparently) ----
+# this does the same as above but averages over many runs to get a better view of the true accuracy of the k value
+iterations = 50
+numks = 40
+masterAcc = matrix(nrow = iterations, ncol = numks)
+  
+for(j in 1:iterations)
+{
+ accs = data.frame(accuracy = numeric(40), k = numeric(40))
+ index<- sample(1:dim(Bud)[1],round(splitperc*dim(Bud)[1]),replace=F)
+ train<- Bud[index,]
+ test<- Bud[-index,]
+ #sprintf("train/test shuffle %s", i)
+for(i in 1:numks)
+{
+  classifications = knn(train[,4:5],test[,4:5],train$IPAorAle, prob = TRUE, k = i)
+  table(classifications,test$IPAorAle)
+  CM = confusionMatrix(table(classifications,test$IPAorAle))
+  masterAcc[j,i] = CM$overall[1]
+  #print(CM$overall[1])
+}
+}
+MeanAcc = colMeans(masterAcc)
+plot(seq(1,numks,1),MeanAcc, type = "l")
+which.max(MeanAcc)
+```
+
+```{r}
+# Question 8 -  The classifier ----
 set.seed(4)
 index<- sample(1:dim(Bud)[1],round(splitperc*dim(Bud)[1]),replace=F)
-  train<- Bud[index,]
-  test<- Bud[-index,]
+train<- Bud[index,]
+test<- Bud[-index,]
 
-classifications = knn(train[,4:5],test[,4:5],train$IPAorAle, prob = TRUE, k = 50)
+classifications = knn(train[,4:5],test[,4:5],train$IPAorAle, prob = TRUE, k = 5)
 table(classifications,test$IPAorAle)
 confusionMatrix(table(classifications,test$IPAorAle))
 ```
@@ -565,7 +591,55 @@ sprintf("The Max IBU is %s, from the beer %s,in%s",
         BeerBreweryLMPredicted$State[which.max(BeerBreweryLMPredicted$IBU)])
 ```
 
+```{r}
+# Question 9 - Thinking out loud ----
+# We want to find the most popular beer and which state has the least of it.
+# We can then use the most popular ABV and IBU to design a custom type if possible.
+# Do we want to bring in outside data here from some reputable sources to back our beer choice?
 
+# Budweiser is an American Style Pale Lager - # 15 on the list
+# Top on the list is American IPA - distinguished by its flavor and aroma  usually herbal, piney, and/or fruity especially citrus (BeerAdvocate.com)
+# its very hoppy and contains 6-10% alcohol.
+
+# calls in consumption by state
+Consume = read.csv(file.choose())
+Consume = Consume %>% mutate(ConsumePC = round((alcoholConsumptionGallons / Pop)*10^6,5))
+names(Consume)[1] <- "state"
+summary(Consume)
+```
+
+```{r, warning=FALSE}
+# Question 9 - Alcohol consumption per capita by state ---- 
+
+Consume %>% arrange(-ConsumePC) %>% slice(1:15) %>% ggplot(aes(x = reorder(state, ConsumePC), y = ConsumePC)) + geom_col() + coord_flip()
+
+plot_usmap(data = Consume, values = "ConsumePC", color = "red", labels = TRUE, label_color = "white") + 
+  scale_fill_continuous(name = "Alcohol Consumption", label = scales::comma) + 
+  labs(title = "USA MAP", subtitle = "Per Capita") +
+  theme(legend.position = "right")
+
+Consume %>% arrange(-alcoholConsumptionGallons) %>% slice(1:15) %>% 
+  ggplot(aes(x = reorder(state, alcoholConsumptionGallons), y = alcoholConsumptionGallons)) + geom_col() + coord_flip()
+
+plot_usmap(data = Consume, values = "alcoholConsumptionGallons", color = "red", labels = TRUE, label_color = "white") + 
+  scale_fill_continuous(name = "Alcohol Consumption", label = scales::comma) + 
+  labs(title = "USA MAP", subtitle = "Total") +
+  theme(legend.position = "right")
+```
+# New Hampshire, Delaware, and DC are interesting here
+```{r}
+# Question 9 - Display top 15 beer styles and States with lowest number of most popular style ----
+# Display top 15 Styles by count
+BeerBrewery %>% group_by(Style) %>% summarise(CountStyle = n()) %>% arrange(-CountStyle) %>% slice(1:15) %>%
+  ggplot(aes(x = reorder(Style, CountStyle), y = CountStyle)) + geom_col() +
+  theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) + ylab("Number of Beers") + xlab("Most Popular Styles") + coord_flip() + 
+  ggtitle("15 Most Popular Beer Styles by Style Frequency")
+
+BeerBrewery %>% group_by(State) %>% filter(Style == "American IPA") %>% summarise(Count = n()) %>% arrange(Count) %>% slice(1:15) %>%
+  ggplot(aes(x = reorder(State, Count), y = Count)) + geom_col() + theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) + 
+  ylab("Number American IPA's Brewed in State") + xlab("State") + coord_flip() + 
+  ggtitle("States With Lowest American IPA Count")
+```
 
 
 
