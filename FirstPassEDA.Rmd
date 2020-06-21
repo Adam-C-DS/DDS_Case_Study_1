@@ -240,14 +240,14 @@ BeerBrewery %>% group_by(IBUFac) %>% summarise(countibu = n()) %>% arrange(-coun
 
 # Start of Linear models. These are to look at imputing by using LM predictions
 ```{r}
-# Part of question 3 - Set Seed and Train/test sets ----  
+# Part of question 3 - Set Seed and Train/test sets ----
 set.seed(4)
 splitperc = 0.70
 index<- sample(1:dim(BeerBreweryNA.delete)[1],round(splitperc*dim(BeerBreweryNA.delete)[1]),replace=F)
 train<- BeerBreweryNA.delete[index,]
 test<- BeerBreweryNA.delete[-index,]
 
-# Simple model - linear model 1 and fit stats (q3) -  IBU ~ ABV ----
+# Simple model - linear model 1 and fit stats (q3) -  IBU ~ ABV
 linearmodel1 <- lm(IBU ~ ABV, data = train)
 summary(linearmodel1)
 ols_plot_resid_fit(linearmodel1)
@@ -256,7 +256,7 @@ ols_plot_resid_qq(linearmodel1)
 ols_plot_resid_hist(linearmodel1)
 ols_plot_cooksd_bar(linearmodel1)
 
-# Complex Model - Linear model 2 and fit stats(q3) - IBU ~ log(ABV)^3 ----
+# Complex Model - Linear model 2 and fit stats(q3) - IBU ~ log(ABV)^3
 linearmodel2 <- lm(IBU ~ poly(log(ABV),3), data = train)
 summary(linearmodel2)
 ols_plot_resid_fit(linearmodel2)
@@ -621,7 +621,8 @@ plot_usmap(data = Consume, values = "alcoholConsumptionGallons", color = "red", 
   labs(title = "USA MAP", subtitle = "Total") +
   theme(legend.position = "right")
 ```
-# New Hampshire, Delaware, and DC are interesting here
+
+New Hampshire, Delaware, and DC are interesting here
 ```{r}
 # Question 9 - Display top 15 beer styles and States with lowest number of most popular style ----
 # Display top 15 Styles by count
