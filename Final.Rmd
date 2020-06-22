@@ -1,7 +1,7 @@
 ---
 title: "Final EDA DDS 1"
 author: "Adam Canton & Carl Keusseyan"
-date: "6/10/2020"
+date: "6/22/2020"
 output: html_document
 ---
 
@@ -475,7 +475,7 @@ plot_usmap(data = map2, values = "StateMedian", color = "red", labels = TRUE, la
 BeerBreweryKNNPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = round(median(IBUPred),3)) %>% arrange(-StateMedian) %>% slice(1:15) %>%
   ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
-  ggtitle("Median IBU By State (Top 15)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
+  ggtitle("Median IBU By State (Highest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
 
 mapBreweries = BeerBreweryKNNPredicted %>% na.omit() %>% group_by(State) %>% summarise(StateMedian = median(IBUPred))
 mapBreweries$State = as.character(mapBreweries$State)
