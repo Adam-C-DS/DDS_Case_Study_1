@@ -12,5 +12,5 @@ A presentation level analysis can be found in the power point slides.
  * Breweries.csv - contains BrewID, Brewery Name, city and state locations
  * BeerBrewery.csv -  Merged data set of the above two, by Brew ID/Beer ID
  * 2020 Alcohol Consumption Ranked by State.csv - external data set used to answer project question 9
- ** Contains State, Alcohol consumption ins gallons, consumption in liters, and state population
+   ** Contains State, Alcohol consumption ins gallons, consumption in liters, and state population
 
