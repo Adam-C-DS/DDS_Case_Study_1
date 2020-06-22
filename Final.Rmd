@@ -48,7 +48,7 @@ names(BeerBrewery)[8] <- "Brewery"
 
 ```
 
-```{r, warning=FALSE}
+```{r warning=FALSE}
 # This is analysis question 1 - Breweries by State, Highest: Colorado, Lowest: DC, Dakotas, and West Virginia ----
 # Show number of breweries by state
 Breweries %>% group_by(State) %>% count_() %>% ggplot(aes(x = reorder(State, -n), y = n )) +
