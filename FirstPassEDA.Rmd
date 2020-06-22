@@ -49,7 +49,7 @@ names(BeerBrewery)[8] <- "Brewery"
 ```
 
 ```{r, warning=FALSE}
-# This is analysis question 1 - Breweries by State ----
+# This is analysis question 1 - Breweries by State, Highest: Colorado, Lowest: DC, Dakotas, and West Virginia ----
 # Show number of breweries by state
 Breweries %>% group_by(State) %>% count_() %>% ggplot(aes(x = reorder(State, -n), y = n )) +
   geom_col() + theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Number of Breweries') + 
@@ -74,7 +74,7 @@ tail(BeerBrewery, 6)
 
 ```{r}
 # Part of question 3 - Imputing some researched values for ABV and IBU - Intializing  ---- 
-# Filled in researched Data and Intialize Data sets
+# Filled in researched Data and Intialize Data sets Data from Untapped, and Beer Advocate
 
 ## 75 Brewery Vivant Fat Paczki - 7.5%
 BeerBrewery$ABV[75] = 0.075
@@ -211,6 +211,7 @@ rm(Beers)
 
 ```{r}
 # Part of Question 3 - Looking at whats missing ----
+# The conversation about missing values is really a conversation about IBU
 gg_miss_var(BeerBrewery)
 
 na_count <- sapply(BeerBrewery, function(y) sum(length(which(is.na(y)))))
@@ -238,7 +239,7 @@ BeerBrewery %>% group_by(IBUFac) %>% summarise(countibu = n()) %>% arrange(-coun
   coord_flip() + theme(axis.text.x = element_text(angle = 90, vjust = -0.05))
 ```
 
-# Start of Linear models. These are to look at imputing by using LM predictions
+# Start of Linear models. These are to look at imputing IBU by using LM predictions
 ```{r}
 # Part of question 3 - Set Seed and Train/test sets ----
 set.seed(4)
@@ -266,10 +267,6 @@ ols_plot_resid_hist(linearmodel2)
 ols_plot_cooksd_bar(linearmodel2)
 #Whats with point 729???
 ```
-
-There is some serious correlation in the above residual plots which is a bit troubling. This would suggest we need a correction of some sort or more predictors (of which we have none). Logging the response does not help. Model 2 gets rid of a lot of the correlation - but adds a non-constant variance violation, which again is not alleviated by log transforms.
-
-All this leads me to think we may want a non-parametric model. So KNN or NB
 
 ```{r}
 # Linear Model Benchmarking (q3) ----
@@ -360,6 +357,8 @@ BeerBreweryLMPredicted <- BeerBrewery %>% filter((!is.na(BeerBrewery$ABV))) %>%
 
 ```
 
+There is some serious correlation in the above residual plots which is a bit troubling. This would suggest we need a correction of some sort or more predictors (of which we have none). Logging the response does not help. Model 2 gets rid of a lot of the correlation - but adds a non-constant variance violation, which again is not alleviated by log transforms. However the model still may have valid predictive outputs - We will run it against a KNN.
+
 ```{r}
 # KNN Imputation Method (q3) ----
 # this method cant have both columns of the variables be NA - so this drops the 17 NA ABV values total 2393 instead 2410....
@@ -370,6 +369,7 @@ BeerBreweryKNNPredicted <- predict(BeerBreweryKNNPredicted, BeerBrewery1)
 
 # Unscales the IBU So we can analyze it
 BeerBreweryKNNPredicted = BeerBreweryKNNPredicted %>% mutate(IBUPred = (IBU*sd(BeerBrewery1$IBU, na.rm = TRUE) + mean(BeerBrewery1$IBU, na.rm = TRUE)))
+BeerBreweryKNNPredicted = BeerBreweryKNNPredicted %>% mutate(ABV1 = (ABV*sd(BeerBrewery1$ABV, na.rm = TRUE) + mean(BeerBrewery1$ABV, na.rm = TRUE)))
 ```
 
 ```{r}
@@ -389,17 +389,19 @@ plot_grid(g1,g3,g2,g4, ncol = 2)
 
 ```{r, warning = FALSE}
 # IBU Distribution Characteristics - Summary Stats and distribution of IBU After LM impute (q3) ----
-g1 = BeerBrewery %>% na.omit() %>% ggplot(aes(x = IBU)) + geom_histogram(binwidth = 2) + xlim(0,150) +
+g1 = BeerBreweryLMPredicted %>% na.omit() %>% ggplot(aes(x = IBU)) + geom_histogram(binwidth = 2) + xlim(0,150) +
   theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 
-g2 = BeerBrewery %>% na.omit()  %>% ggplot(aes(x = IBU)) + geom_boxplot() + xlim(0,150) + 
+g2 = BeerBreweryLMPredicted %>% na.omit()  %>% ggplot(aes(x = IBU)) + geom_boxplot() + xlim(0,150) + 
   theme(axis.ticks.y = element_blank())
 
-g3 = BeerBrewery %>% na.omit() %>% ggplot(aes(sample = IBU)) + stat_qq_line() + stat_qq() + ylim(0,150) + xlab("Quantile") + ylab("IBU")
+g3 = BeerBreweryLMPredicted %>% na.omit() %>% ggplot(aes(sample = IBU)) + stat_qq_line() + stat_qq() + ylim(0,150) + xlab("Quantile") + ylab("IBU")
 
 g4 = ggdraw() + draw_label("Distribution Characteristics \nof LM Imputed IBU", color = "Gray2", size = 20)
 
 plot_grid(g1,g3,g2,g4, ncol = 2)
+summary(BeerBreweryLMPredicted$IBU)
+
 ```
 
 ```{r, warning=FALSE}
@@ -415,6 +417,7 @@ g3 = BeerBreweryKNNPredicted %>% na.omit() %>% ggplot(aes(sample = IBUPred)) + s
 g4 = ggdraw() + draw_label("Distribution Characteristics \nof KNN Imputed IBU", color = "Gray2", size = 20)
 
 plot_grid(g1,g3,g2,g4, ncol = 2)
+summary(BeerBreweryKNNPredicted$IBUPred)
 ```
 
 ```{r, warning=FALSE}
@@ -443,22 +446,25 @@ difference %>% ggplot(aes(x = IBUPred, y = Prediction)) + geom_point() + geom_sm
   ggtitle(sprintf("LM v KNN Predicted IBU\n (Corr = %s)",round(cor(difference$Prediction, difference$IBUPred),3)))
 ```
 
+We found no significant statistical difference between the KNN and LM predictions
+We chose to go with the KNN predictions for the following problems due to the odd fit statistics in the LM.
+Note that neither the KNN or the LM imputed values were minimums or maximums.
 ```{r, warning=FALSE}
 # Answer - Project question #4, Median ABV by State ----
 # Top 15
-BeerBreweryLMPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV)) %>% arrange(-StateMedian) %>% slice(1:15) %>%
+BeerBreweryKNNPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV1)) %>% arrange(-StateMedian) %>% slice(1:15) %>%
   ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
   ggtitle("Median ABV By State (Highest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
 
 # Bottom 15
-BeerBreweryLMPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV)) %>% arrange(StateMedian) %>% slice(1:15) %>%
+BeerBreweryKNNPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = median(ABV1)) %>% arrange(StateMedian) %>% slice(1:15) %>%
   ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
   ggtitle("Median ABV By State (Lowest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
 
 # Map Graphic
-mapBreweries = BeerBreweryLMPredicted %>% na.omit() %>% group_by(State) %>% summarise(StateMedian = median(ABV))
+mapBreweries = BeerBreweryKNNPredicted %>% na.omit() %>% group_by(State) %>% summarise(StateMedian = median(ABV1))
 mapBreweries$State = as.character(mapBreweries$State)
 mapBreweries$State = sub(" ", "", mapBreweries$State)
 map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
@@ -470,12 +476,12 @@ plot_usmap(data = map2, values = "StateMedian", color = "red", labels = TRUE, la
 
 ```{r, warning=FALSE}
 # Answer Project question #4, Median IBU Content by State ----
-BeerBreweryLMPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = round(median(IBU),3)) %>% arrange(-StateMedian) %>% slice(1:15) %>%
+BeerBreweryKNNPredicted %>% group_by(State) %>% na.omit() %>% summarise(StateMedian = round(median(IBUPred),3)) %>% arrange(-StateMedian) %>% slice(1:15) %>%
   ggplot(aes(x = reorder(State, -StateMedian), y = StateMedian)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Median') + 
-  ggtitle("Median IBU By State (Highest)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
+  ggtitle("Median IBU By State (Top 15)") + geom_text(aes(label = StateMedian), vjust = -0.5, size = 3)
 
-mapBreweries = BeerBreweryLMPredicted %>% na.omit() %>% group_by(State) %>% summarise(StateMedian = median(IBU))
+mapBreweries = BeerBreweryKNNPredicted %>% na.omit() %>% group_by(State) %>% summarise(StateMedian = median(IBUPred))
 mapBreweries$State = as.character(mapBreweries$State)
 mapBreweries$State = sub(" ", "", mapBreweries$State)
 map2 = merge(statepop, mapBreweries, by.x = "abbr", by.y = "State")
@@ -486,23 +492,22 @@ plot_usmap(data = map2, values = "StateMedian", color = "red", labels = TRUE, la
 ```
 
 ```{r}
-# project number 5, Max ABV and IBU ----
-# Max ABV and IBU drawn from Linear predicted data
+# project number 5, Max ABV (12.8% Lee Hill Series) and IBU (138 Bitter Bitch Beer) ----
+# Max ABV and IBU drawn from KNN predictd data - note that the max or min in either category is a real value, not an imputed one
 sprintf("The Max ABV is %s, from the beer %s,in%s",
-        BeerBreweryLMPredicted$ABV[which.max(BeerBreweryLMPredicted$ABV)],
-        BeerBreweryLMPredicted$Beer[which.max(BeerBreweryLMPredicted$ABV)],
-        BeerBreweryLMPredicted$State[which.max(BeerBreweryLMPredicted$ABV)])
+        BeerBreweryKNNPredicted$ABV1[which.max(BeerBreweryKNNPredicted$ABV1)],
+        BeerBreweryLMPredicted$Beer[which.max(BeerBreweryKNNPredicted$ABV1)],
+        BeerBreweryLMPredicted$State[which.max(BeerBreweryKNNPredicted$ABV1)])
 
 sprintf("The Max IBU is %s, from the beer %s,in%s",
-        BeerBreweryLMPredicted$IBU[which.max(BeerBreweryLMPredicted$IBU)],
-        BeerBreweryLMPredicted$Beer[which.max(BeerBreweryLMPredicted$IBU)],
-        BeerBreweryLMPredicted$State[which.max(BeerBreweryLMPredicted$IBU)])
+        BeerBreweryKNNPredicted$IBUPred[which.max(BeerBreweryKNNPredicted$IBUPred)],
+        BeerBreweryKNNPredicted$Beer[which.max(BeerBreweryKNNPredicted$IBUPred)],
+        BeerBreweryKNNPredicted$State[which.max(BeerBreweryKNNPredicted$IBUPred)])
 ```
 
 Need to look at ABV Distribution - looks approximately normal with a small right skew - QQplot indicates we might be able to log variable
 ```{r, warning=FALSE}
 # Analysis of number 6 - Summary Stats and distribution of ABV ----
-# If we take off the meaningless y axis stuff from the boxplot it un-centers it from the histogram - better to have it on center? Currently on
 g1 = BeerBrewery %>% ggplot(aes(x = ABV)) + geom_histogram(binwidth = 0.0025) + xlim(0,0.125) +
   theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 
@@ -510,7 +515,9 @@ g2 = BeerBrewery %>% ggplot(aes(x = ABV)) + geom_boxplot() + xlim(0,0.125) + the
 
 g3 = BeerBrewery %>% ggplot(aes(sample = ABV)) + stat_qq_line() + stat_qq() + ylim(0,0.125) + xlab("Quantile") + ylab("ABV")
 
-g4 = ggdraw() + draw_label("Distribution Characteristics \nof ABV", color = "Gray2", size = 20)
+g4 = ggdraw() +
+  draw_label("ABV Summary and Distribution:\nMin. 0.00100\n1st Qu. 0.05000\nMedian 0.05600\nMean 0.05974\n3rd Qu. 0.06700\nMax 0.12800", 
+             color = "Gray2", size = 15)
 
 plot_grid(g1,g3,g2,g4, ncol = 2)
 ```
@@ -524,9 +531,9 @@ BeerBrewery %>% na.omit() %>% ggplot(aes(x = ABV, y = IBU, color = ABVFac)) + ge
 
 ```{r}
 # question 8 - Creates new data set and runs classification on a 70/30 CV ----
-BeerBreweryLMPredicted = BeerBreweryLMPredicted %>% mutate(StyleChar = as.character(Style))
-IPA = BeerBreweryLMPredicted %>% filter(str_detect(StyleChar,"IPA"))
-Ale = BeerBreweryLMPredicted %>% filter(str_detect(StyleChar,"Ale")) %>% filter(!str_detect(StyleChar,"India Pale Ale"))
+BeerBreweryKNNPredicted = BeerBreweryKNNPredicted %>% mutate(StyleChar = as.character(Style))
+IPA = BeerBreweryKNNPredicted %>% filter(str_detect(StyleChar,"IPA"))
+Ale = BeerBreweryKNNPredicted %>% filter(str_detect(StyleChar,"Ale")) %>% filter(!str_detect(StyleChar,"India Pale Ale"))
 AleIPA = Ale %>% filter(str_detect(StyleChar,"IPA"))
 
 IPA = IPA %>% mutate(IPAorAle = "IPA") 
@@ -538,7 +545,6 @@ Bud$IPAorAle = as.factor(Bud$IPAorAle)
 
 ```{r}
 # Part of question 8 - Find best k value  ----
-# this does the same as above but averages over many runs to get a better view of the true accuracy of the k value
 iterations = 50
 numks = 40
 masterAcc = matrix(nrow = iterations, ncol = numks)
@@ -553,7 +559,7 @@ for(j in 1:iterations)
  #sprintf("train/test shuffle %s", i)
 for(i in 1:numks)
 {
-  classifications = knn(train[,4:5],test[,4:5],train$IPAorAle, prob = TRUE, k = i)
+  classifications = knn(train[,13:14],test[,13:14],train$IPAorAle, prob = TRUE, k = i)
   table(classifications,test$IPAorAle)
   CM = confusionMatrix(table(classifications,test$IPAorAle))
   masterAcc[j,i] = CM$overall[1]
@@ -572,7 +578,7 @@ index<- sample(1:dim(Bud)[1],round(splitperc*dim(Bud)[1]),replace=F)
 train<- Bud[index,]
 test<- Bud[-index,]
 
-classifications = knn(train[,4:5],test[,4:5],train$IPAorAle, prob = TRUE, k = 7)
+classifications = knn(train[,13:14],test[,13:14],train$IPAorAle, prob = TRUE, k = 11)
 table(classifications,test$IPAorAle)
 confusionMatrix(table(classifications,test$IPAorAle))
 ```
@@ -587,8 +593,7 @@ BeerBrewery %>% group_by(ABVFac) %>% summarise(CountABVFac = n()) %>% na.omit() 
 ```{r}
 # Question 9 - Thinking out loud ----
 # We want to find the most popular beer and which state has the least of it.
-# We can then use the most popular ABV and IBU to design a custom type if possible.
-# Do we want to bring in outside data here from some reputable sources to back our beer choice?
+# We can then use a new data set that describes consumption of alcohol by state so we can deploy product efficiently
 
 # Budweiser is an American Style Pale Lager - # 15 on the list
 # Top on the list is American IPA - distinguished by its flavor and aroma  usually herbal, piney, and/or fruity especially citrus (BeerAdvocate.com)
@@ -603,7 +608,7 @@ summary(Consume)
 
 ```{r, warning=FALSE}
 # Question 9 - Alcohol consumption per capita by state ---- 
-
+# Largest Per Capita and Largest total: DC, NH, DE
 Consume %>% arrange(-ConsumePC) %>% slice(1:15) %>% ggplot(aes(x = reorder(state, ConsumePC), y = ConsumePC)) + geom_col() + coord_flip() + 
   xlab("Consumption Per Capita")
 
@@ -626,6 +631,9 @@ New Hampshire, Delaware, and DC are interesting here
 ```{r}
 # Question 9 - Display top 15 beer styles and States with lowest number of most popular style ----
 # Display top 15 Styles by count
+# Top Style is American IPA -  note that Budweiser's original product is an American Pale Lager which rounds out the end of the top 15
+# Top States that have the least of them DC, DE, Dakotas, AL, MS, NE, NH
+# American IPA: Color: Pale, 6.3-7.5 ABV, 50-70 IBU   
 BeerBrewery %>% group_by(Style) %>% summarise(CountStyle = n()) %>% arrange(-CountStyle) %>% slice(1:15) %>%
   ggplot(aes(x = reorder(Style, CountStyle), y = CountStyle)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) + ylab("Number of Beers") + xlab("Most Popular Styles") + coord_flip() + 
