@@ -1,0 +1,44 @@
+---
+title: "Business"
+author: "Adam Canton"
+date: "6/23/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(matrixStats)
+library(GGally)
+library(caret)
+library(corrplot)
+library(cowplot)
+library(ggExtra)
+library(ggthemes)
+library(maps)
+library(usmap)
+library(naniar)
+library(olsrr)
+library(stringr)
+library(e1071)
+library(FNN)
+library(MASS)
+library(ggthemes)
+library(caret)
+library(e1071)
+library(reshape2)
+library(RANN)
+```
+
+```{r}
+BeerBrewery %>% group_by(State) %>% summarize(StateBeers = n()) %>% ggplot(aes(x = reorder(State, -StateBeers), y = StateBeers)) + geom_col() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) +  xlab("State") + ylab('Number of Beers') + 
+  ggtitle("Number of Beers by State") + geom_text(aes(label = StateBeers), vjust = -0.5, size = 3)
+  
+```
+
