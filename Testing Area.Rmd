@@ -42,3 +42,15 @@ BeerBrewery %>% group_by(State) %>% summarize(StateBeers = n()) %>% ggplot(aes(x
   
 ```
 
+```{r}
+BeerBreweryKNNPredicted$IBUPred <- round(BeerBreweryKNNPredicted$IBUPred,0)
+BeerBreweryKNNPredicted = BeerBreweryKNNPredicted %>% mutate(IBUPredFac = as.factor(IBUPred))
+```
+
+```{r}
+BeerBreweryKNNPredicted %>% group_by(IBUPredFac) %>% summarise(countibu = n()) %>%
+  arrange(-countibu) %>% slice(1:15)  %>% ggplot(aes(x = reorder(IBUPredFac, countibu), y = countibu)) +
+  geom_col(width = 0.75) + xlab("IBU Factor") + ylab("# of Beers with this IBU") + coord_flip() +
+  theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) + ggtitle("Top IBU Levels")
+```
+
