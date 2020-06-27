@@ -54,3 +54,93 @@ BeerBreweryKNNPredicted %>% group_by(IBUPredFac) %>% summarise(countibu = n()) %
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) + ggtitle("Top IBU Levels")
 ```
 
+```{r}
+g1 = BeerBreweryKNNPredicted %>% na.omit() %>% ggplot(aes(x = ABV1)) + geom_histogram(binwidth = 0.002, fill = "deepskyblue3", color = "black") +
+  xlim(0, 0.13) +theme(axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text.y = element_blank()) + ggtitle("Frequency of ABV") +
+  theme_economist()
+
+g2 = BeerBreweryKNNPredicted %>%  na.omit() %>% ggplot(aes(x = ABV1)) + geom_boxplot(fill = "deepskyblue3", color = "black") + theme_economist()
+
+plot_grid(g1,g2, ncol = 1)
+```
+
+```{r, warning=FALSE}
+# Analysis of number 6 - Summary Stats and distribution of ABV ----
+g1 = BeerBreweryKNNPredicted %>% ggplot(aes(x = IBUPred)) + geom_histogram(binwidth = 3) + xlim(0,140) +
+  theme(axis.title.x = element_blank(), axis.title.y = element_blank()) + ggtitle("Histogram and Boxplot of IBU")
+
+g2 = BeerBreweryKNNPredicted %>% ggplot(aes(x = IBUPred)) + geom_boxplot() + xlim(0,140) + 
+  theme(axis.ticks.y = element_blank()) + xlab("IBU")
+
+g3 = BeerBrewery %>% ggplot(aes(sample = ABV)) + stat_qq_line() + stat_qq() + ylim(0,0.125) + xlab("Quantile") + ylab("ABV")
+
+g4 = ggdraw() +
+  draw_label("ABV Summary and Distribution:\nMin. 0.00100\n1st Qu. 0.05000\nMedian 0.05600\nMean 0.05974\n3rd Qu. 0.06700\nMax 0.12800", 
+             color = "Gray2", size = 15)
+
+plot_grid(g1,g2, ncol = 1, nrow = 2)
+```
+
+```{r, warning=FALSE}
+Consume %>% arrange(-alcoholConsumptionGallons) %>% 
+  ggplot(aes(x = reorder(state, alcoholConsumptionGallons), y = alcoholConsumptionGallons)) + geom_col() + coord_flip() + 
+  xlab("Total Alcohol Consumption")
+
+plot_usmap(data = Consume, values = "alcoholConsumptionGallons", color = "red", labels = TRUE, label_color = "white") + 
+  scale_fill_continuous(name = "Alcohol Consumption", label = scales::comma) + 
+  labs(title = "USA MAP", subtitle = "Total") +
+  theme(legend.position = "right")
+```
+
+```{r}
+Consume %>% arrange(-alcoholConsumptionGallons)
+```
+
+
+```{r, warning=FALSE}
+# Analysis of number 6 - Summary Stats and distribution of ABV ----
+g1 = BeerBreweryKNNPredicted %>% ggplot(aes(x = IBUPred)) + geom_histogram(binwidth = 3, fill = "deepskyblue3", color = "black") + xlim(0,140) +
+  theme(axis.title.x = element_blank(), axis.title.y = element_blank()) + ggtitle("Distribution of IBU")
+
+g2 = BeerBreweryKNNPredicted %>% ggplot(aes(x = IBUPred)) + geom_boxplot(fill = "deepskyblue3", color = "black") + xlim(0,140) + theme(axis.ticks.y = element_blank(), legend.position = "none") + xlab("IBU")
+
+summary(BeerBreweryKNNPredicted$IBUPred)
+plot_grid(g1,g2, ncol = 1)
+```
+
+```{r}
+BeerBreweryKNNPredicted %>% group_by(State) %>% summarise(MedIBU = round(median(IBUPred),0)) %>% arrange(-MedIBU)
+
+```
+
+```{r}
+Bud %>% dplyr::select(ABV1, IBUPred, IPAorAle) %>% ggplot(aes(x = ABV1, y = IBUPred, color = IPAorAle)) + geom_point() + xlim(0,0.13) + geom_jitter() + 
+  ggtitle("Scatterplot of IBU v ABV by IPA or Ale") + labs(color = "IPA or Ale") + xlab("ABV") + ylab("IBU")
+```
+
+
+```{r, warning=FALSE}
+# Analysis of number 6 - Summary Stats and distribution of ABV ----
+g1 = BeerBreweryKNNPredicted %>% ggplot(aes(x = ABV1)) + geom_histogram(binwidth = 0.001, fill = "deepskyblue3", color = "black") + xlim(0,0.13) +
+  theme(axis.title.x = element_blank(), axis.title.y = element_blank()) + ggtitle("Distribution of ABV")
+
+g2 = BeerBreweryKNNPredicted %>% ggplot(aes(x = ABV1)) + geom_boxplot(fill = "deepskyblue3", color = "black") + xlim(0,0.13) + theme(axis.ticks.y = element_blank(), legend.position = "none") + xlab("ABV")
+
+summary(BeerBreweryKNNPredicted$IBUPred)
+plot_grid(g1,g2, ncol = 1)
+```
+
+```{r}
+BeerBrewery %>% group_by(Style) %>% summarise(CountStyle = n()) %>% arrange(-CountStyle) %>% slice(1:15) %>%
+  ggplot(aes(x = reorder(Style, CountStyle), y = CountStyle)) + geom_col(fill = "deepskyblue3") +
+  theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) + ylab("Number of Beers") + xlab("Most Popular Styles") + coord_flip() + 
+  ggtitle("15 Most Popular Beer Styles by Style Frequency")
+```
+
+```{r}
+BeerBrewery %>% group_by(State) %>% filter(Style == "American IPA") %>% summarise(Count = n()) %>% arrange(Count) %>% slice(1:15) %>%
+  ggplot(aes(x = reorder(State, Count), y = Count)) + geom_col(fill = "deepskyblue3") + theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) + 
+  ylab("Number American IPA's Brewed in State") + xlab("State") + coord_flip() + 
+  ggtitle("States With Lowest American IPA Count")
+```
+
