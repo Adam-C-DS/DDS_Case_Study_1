@@ -188,7 +188,7 @@ BeerBreweryNA.delete = BeerBrewery %>% filter(IBU != "NA")
 
 ```
 
-```{r}
+```{r, include=FALSE}
 # KNN Imputation Method (q3) ----
 # this method cant have both columns of the variables be NA - so this drops the 17 NA ABV values total 2393 instead 2410....
 # This is pretty cool it imputes the values directly into the columns so we just have to unscale what we need
@@ -201,14 +201,6 @@ BeerBreweryKNNPredicted = BeerBreweryKNNPredicted %>% mutate(IBUPred = (IBU*sd(B
 BeerBreweryKNNPredicted = BeerBreweryKNNPredicted %>% mutate(ABV1 = (ABV*sd(BeerBrewery1$ABV, na.rm = TRUE) + mean(BeerBrewery1$ABV, na.rm = TRUE)))
 ```
 # Creates codebooks for the data sets
-```{r codebook}
-codebook(Beers)
-```
-
-```{r codebook}
-codebook(Breweries)
-```
-
 ```{r codebook}
 codebook(BeerBreweryKNNPredicted)
 ```
