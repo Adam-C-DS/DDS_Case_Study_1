@@ -188,7 +188,7 @@ BeerBreweryNA.delete = BeerBrewery %>% filter(IBU != "NA")
 
 ```
 
-```{r, include=FALSE}
+```{r}
 # KNN Imputation Method (q3) ----
 # this method cant have both columns of the variables be NA - so this drops the 17 NA ABV values total 2393 instead 2410....
 # This is pretty cool it imputes the values directly into the columns so we just have to unscale what we need
