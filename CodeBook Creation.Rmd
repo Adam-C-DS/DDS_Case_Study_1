@@ -1,0 +1,217 @@
+---
+title: "CodeBook Creator"
+author: "Adam Canton"
+date: "6/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(matrixStats)
+library(GGally)
+library(caret)
+library(corrplot)
+library(cowplot)
+library(ggExtra)
+library(ggthemes)
+library(maps)
+library(usmap)
+library(naniar)
+library(olsrr)
+library(stringr)
+library(e1071)
+library(FNN)
+library(MASS)
+library(ggthemes)
+library(caret)
+library(e1071)
+library(reshape2)
+library(RANN)
+library(codebook)
+library(future)
+```
+
+```{r}
+# Create Original Data Set ----
+
+# Beers.csv
+Beers <- read.csv(file.choose())
+# Breweries.csv
+Breweries <- read.csv(file.choose())
+
+# Merge Beer and Brewery 
+BeerBrewery = merge(Beers, Breweries, by.x = "Brewery_id", by.y = "Brew_ID")
+
+# Change some column names for tidyness
+names(BeerBrewery)[2] <- "Beer"
+names(BeerBrewery)[8] <- "Brewery"
+
+```
+
+```{r, include=FALSE}
+# Part of question 3 - Imputing some researched values for ABV and IBU - Intializing  ---- 
+# Filled in researched Data and Intialize Data sets Data from Untapped, and Beer Advocate
+
+## 75 Brewery Vivant Fat Paczki - 7.5%
+BeerBrewery$ABV[75] = 0.075
+## 76 Brewery Vivant Earth-Like-Planets 5.5%
+BeerBrewery$ABV[76] = 0.055
+## 186 Sun King Brewing Company 30 Min Coma 4.5% abv - 65 IBU
+BeerBrewery$ABV[186] = 0.045
+BeerBrewery$IBU[186] = 65
+## 193 Sun King Brewing Company Bourbon Barrel Cowbell 6% abv - 23 IBU
+BeerBrewery$ABV[193] = 0.060
+BeerBrewery$IBU[193] = 23
+## 227 Cedar Creek Brewery Special Release - Actually refers to two separate beers
+## 252 James Page Brewing Company Bastian 6.2% no IBU
+BeerBrewery$ABV[252] = 0.062
+## 440 Crazy Mountain Brewing Company Winter Wondergrass Festival Ale 4.9% no IBU
+BeerBrewery$ABV[440] = 0.049
+## 441 Crazy Mountain Brewing Company Boohai Red Ale 6%
+BeerBrewery$ABV[441] = 0.060
+## 508 Blue Owl Brewing Professor Black 6.2%
+BeerBrewery$ABV[508] = 0.062
+## 509 Blue Owl Brewing Little Boss 3.8%  - 7 IBU
+BeerBrewery$ABV[509] = 0.038
+BeerBrewery$IBU[509] = 7
+## 510 Blue Owl Brewing Van Dayum! 5.7%
+BeerBrewery$ABV[510] = 0.057
+## 511 Blue Owl Brewing Spirit Animal 5.5%
+BeerBrewery$ABV[511] = 0.055
+## 568 Keweenaw Brewing Company U. P. Witbier 5.5% No IBU
+BeerBrewery$ABV[568] = 0.055
+## 569 Keweenaw Brewing Company November Gale Pale Ale 5% - 5 IBU
+BeerBrewery$ABV[569] = 0.050
+BeerBrewery$IBU[569] = 5
+## 570 Keweenaw Brewing Company Olde Ore Dock Scottish Ale 7%
+BeerBrewery$ABV[570] = 0.070
+## 571 Keweenaw Brewing Company Widow Maker Black Ale 5.2%
+BeerBrewery$ABV[571] = 0.052
+## 572 Keweenaw Brewing Company Lift Bridge Brown Ale 5%
+BeerBrewery$ABV[572] = 0.050
+## 573 Keweenaw Brewing Company Pick Axe Blonde Ale 4.9%
+BeerBrewery$ABV[573] = 0.049
+## 574 Keweenaw Brewing Company Red Jack Amber Ale 5.1%
+BeerBrewery$ABV[574] = 0.051
+## 629 West Sixth Brewing West Sixth IPA 7%
+BeerBrewery$ABV[629] = 0.07
+## 789 Weston Brewing Company Royal Lager Couldnt Find
+## 791 Weston Brewing Company O'Malley's Stout 5.5%
+BeerBrewery$ABV[791] = 0.055
+## 793 Weston Brewing Company O'Malley's Cream Ale 0% ?
+## 900 Fort Pitt Brewing Company Fort Pit Ale Couldnt find - not in production any longer
+## 992 Oskar Blues Brewery The Crowler - not an actual beer
+## 993 Oskar Blues Brewery Cand Aid - not an actual beer
+## 994 Oskar Blues Brewery Icey P.A. 7% 
+BeerBrewery$ABV[994] = 0.07
+## 996 Oskar Blues Brewery Birth IPA couldnt find
+## 1158 Capital Brewery Supper Club Lager 5.2% 
+BeerBrewery$ABV[1158] = 0.052
+## 1298 Rochester Mills Brewing Company Cal and Co Black Cherry Porter 7%
+BeerBrewery$ABV[1298] = 0.07
+## 1424 Ska Brewing Company Autumnal Mole' Stout 5.8%
+BeerBrewery$ABV[1424] = 0.058
+## 1480 Thunderhead Brewing Company Cornstalker Dark Wheat 5.2% 
+BeerBrewery$ABV[1480] = 0.052
+## 1631 Iron Hill Brewery & Restaurant Appreciation Ale 9.4%
+BeerBrewery$ABV[1631] = 0.094
+## 1887 Blue Blood Brewing Company Double Play Pilsner 5.2%
+BeerBrewery$ABV[1887] = 0.052
+## 1892 Blue Blood Brewing Company N Street Drive-In 50th Anniversary IPA 8.6%
+BeerBrewery$ABV[1892] = 0.086
+## 1919 Revolution Brewing Rye Porter No longer in production
+## 1924 Revolution Brewing Miner's Gold 5.1%
+BeerBrewery$ABV[1924] = 0.051
+## 1951 Santa Fe Brewing Company Sante fe Oktoberfest 6%
+BeerBrewery$ABV[1951] = 0.06
+## 2096 MillKing It Productions AXL Pale Ale 5.2
+BeerBrewery$ABV[2096] = 0.062
+## 2177 Brindle Dog Brewing Company Tampa Pale Ale 6.2
+BeerBrewery$ABV[2177] = 0.062
+## 2178 Brindle Dog Brewing Company Orange Grove Wheat Ale - couldnt find
+## 2184 Pete's Brewing Company Pete's Wicked Pale Ale (1997) 5.3
+BeerBrewery$ABV[2184] = 0.053
+## 2227 The Manhattan Brewing Company Manhattan Gold Lager (1990) 5.2 (Beer Authority NYC)
+BeerBrewery$ABV[2227] = 0.052
+## 2234 Dock Street Brewery Dock Street Amber Beer (1992) 5%
+BeerBrewery$ABV[2234] = 0.05
+## 2242 Devil's Canyon Brewery Kaleidoscope Collaboration (2012) 5.5
+BeerBrewery$ABV[2242] = 0.055
+## 2259 Cans Bar and Canteen THP White (2006) Closed
+## 2260 Cans Bar and Canteen THP Amber (2006) Closed
+## 2261 Cans Bar and Canteen THP Light (2006) Closed
+## 2262 Cans Bar and Canteen THP Dark (2006) Closed
+## 2296 Spilker Ales Hopluia (2004) 5.2
+BeerBrewery$ABV[2296] = 0.052
+## 2323 Scotty K NA is a non-alcoholic beer that has no IBU.
+BeerBrewery$IBU[2323] = 1
+## 2345 Buckbean Brewing Company Roler Bock 7.2
+BeerBrewery$ABV[2345] = 0.072
+## 2351 Dolores River Brewery Dolores River Hefeweizen No Info
+## 2352 Dolores River Brewery Dolores River ESB 6.1
+BeerBrewery$ABV[2352] = 0.061
+## 2353 Dolores River Brewery Snaggletooth Double Pale Ale No Info 
+## 2354 Dolores River Brewery Dolores River Pale Ale 5.8
+BeerBrewery$ABV[2354] = 0.058
+## 2355 Dolores River Brewery Dolores River Dry Stout No info
+## 2356 Dolores River Brewery Dolores River Mild No info
+## 2357 Flat Rock Brewing Company Inclined Plane Ale 4.2
+BeerBrewery$ABV[2357] = 0.042
+## 2365 Harvest Moon Brewing Company Great Falls Select Pale Ale 5
+BeerBrewery$ABV[2365] = 0.05
+## 2370 Grand Canyon Brewing Company Black Iron India Pale Ale 7.2
+BeerBrewery$ABV[2370] = 0.072
+## 2394 Prescott Brewing Company Ponderosa IPA 6.5 70
+BeerBrewery$ABV[2394] = 0.065
+BeerBrewery$IBU[2394] = 70
+## 2395 Prescott Brewing Company Liquid Amber Ale 5 17
+BeerBrewery$ABV[2395] = 0.050
+BeerBrewery$IBU[2395] = 17
+
+
+# adds a factorized version of IBU to the data set and displays the levels - 108 of them including NA
+BeerBrewery$IBUFac = as.factor(BeerBrewery$IBU)
+BeerBrewery$IBUFac = addNA(BeerBrewery$IBUFac)
+#levels(BeerBrewery$IBUFac)
+
+# Creates ABV Factor based on popular perception of ABV strength: Weak - Abv(0<0.04), Normal - Abv(0.04<= 0.07), Strong - Abv(>0.07)
+ABVFac = cut(BeerBrewery$ABV, breaks = c(0,0.04,0.07,0.15), labels = c("Weak ( < 0.04)", "Normal (0.04 - 0.07)", "Strong ( >7)"))
+BeerBrewery = cbind(BeerBrewery,ABVFac)
+
+# Creates a Data set that mirrors the original but with NA's deleted
+BeerBreweryNA.delete = BeerBrewery %>% filter(IBU != "NA")
+
+```
+
+```{r}
+# KNN Imputation Method (q3) ----
+# this method cant have both columns of the variables be NA - so this drops the 17 NA ABV values total 2393 instead 2410....
+# This is pretty cool it imputes the values directly into the columns so we just have to unscale what we need
+BeerBrewery1 = BeerBrewery %>% filter((!is.na(BeerBrewery$ABV)))
+BeerBreweryKNNPredicted <- preProcess(BeerBrewery1[,4:5], method = "knnImpute", k = 20)
+BeerBreweryKNNPredicted <- predict(BeerBreweryKNNPredicted, BeerBrewery1)
+
+# Unscales the IBU and ABV So we can analyze it
+BeerBreweryKNNPredicted = BeerBreweryKNNPredicted %>% mutate(IBUPred = (IBU*sd(BeerBrewery1$IBU, na.rm = TRUE) + mean(BeerBrewery1$IBU, na.rm = TRUE)))
+BeerBreweryKNNPredicted = BeerBreweryKNNPredicted %>% mutate(ABV1 = (ABV*sd(BeerBrewery1$ABV, na.rm = TRUE) + mean(BeerBrewery1$ABV, na.rm = TRUE)))
+```
+# Creates codebooks for the data sets
+```{r codebook}
+codebook(Beers)
+```
+
+```{r codebook}
+codebook(Breweries)
+```
+
+```{r codebook}
+codebook(BeerBreweryKNNPredicted)
+```
+
+
+

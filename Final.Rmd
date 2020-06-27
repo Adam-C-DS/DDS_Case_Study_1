@@ -630,7 +630,6 @@ New Hampshire, Delaware, and DC are interesting here
 # Top Style is American IPA -  note that Budweiser's original product is an American Pale Lager which rounds out the end of the top 15
 # Top States that have the least of them DC, DE, Dakotas, AL, MS, NE, NH
 # American IPA: Color: Pale, 6.3-7.5 ABV, 50-70 IBU
-# Release the new 4th of July special Budweiser Star Spangled American IPA in DC, DE, and NH. 7.6% ABV and 60 IBU go 1776! 
 BeerBrewery %>% group_by(Style) %>% summarise(CountStyle = n()) %>% arrange(-CountStyle) %>% slice(1:15) %>%
   ggplot(aes(x = reorder(Style, CountStyle), y = CountStyle)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, vjust = -0.05)) + ylab("Number of Beers") + xlab("Most Popular Styles") + coord_flip() + 
@@ -641,6 +640,8 @@ BeerBrewery %>% group_by(State) %>% filter(Style == "American IPA") %>% summaris
   ylab("Number American IPA's Brewed in State") + xlab("State") + coord_flip() + 
   ggtitle("States With Lowest American IPA Count")
 ```
+
+
 
 
 
