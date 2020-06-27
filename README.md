@@ -15,3 +15,5 @@
  * 2020 Alcohol Consumption Ranked by State.csv - external data set used to answer project question 9
    * Contains State, Alcohol consumption in gallons, consumption in liters, and state population
 
+### Code Books
+#### In order to view right click -> save link as -> and run the html file
