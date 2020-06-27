@@ -18,3 +18,6 @@
 ### Code Books -  In Folder Code Books
 #### In order to view right click -> save link as -> and run the html file
   * Contains a code book for each data set above with the exceptions of BeerBrewery and 2020 Alcohol Consumption
+  * Code books contain descriptions of what is contain in each data set
+  * For an explanation about each individual variable see Variable Description document
+
