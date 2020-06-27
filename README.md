@@ -11,6 +11,7 @@
  * Beers.csv -  contains Beer Name, Beer ID, ABV, IBU, Brewery, Style, and can size
  * Breweries.csv - contains BrewID, Brewery Name, city and state locations
  * BeerBrewery.csv -  Merged data set of the above two, by Brew ID/Beer ID
+ * BeerBreweryKNNPredicted - The merged data set with KNN predicted IBU Values
  * 2020 Alcohol Consumption Ranked by State.csv - external data set used to answer project question 9
    * Contains State, Alcohol consumption in gallons, consumption in liters, and state population
 
